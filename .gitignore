@@ -1,0 +1,11 @@
+# Build-time dependencies
+*.d
+
+# Object files
+*.o
+
+# Executable
+*.elf *.hex
+
+# Build files
+build/*
