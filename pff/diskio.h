@@ -24,13 +24,16 @@ typedef enum {
 	RES_PARERR		/* 3: Invalid parameter */
 } DRESULT;
 
+typedef struct {
+	UINT wc; // Sector write counter
+} WRITE_STATE;
 
 /*---------------------------------------*/
 /* Prototypes for disk control functions */
 
 DSTATUS disk_initialize (void);
 DRESULT disk_readp (BYTE* buff, DWORD sector, UINT offset, UINT count);
-DRESULT disk_writep (const BYTE* buff, DWORD sc);
+DRESULT disk_writep (WRITE_STATE* ws, const BYTE* buff, DWORD sc);
 
 #define STA_NOINIT		0x01	/* Drive not initialized */
 #define STA_NODISK		0x02	/* No medium in the drive */

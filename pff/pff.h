@@ -23,6 +23,7 @@ extern "C" {
 
 #include "integer.h"
 #include "pffconf.h"
+#include "diskio.h"
 
 #if _PFATFS != _PFFCONF
 #error Wrong configuration file (pffconf.h).
@@ -98,12 +99,12 @@ typedef enum {
 /* Petit FatFs module application interface                     */
 
 FRESULT pf_mount (FATFS* fs);								/* Mount/Unmount a logical drive */
-FRESULT pf_open (const char* path);							/* Open a file */
-FRESULT pf_read (void* buff, UINT btr, UINT* br);			/* Read data from the open file */
-FRESULT pf_write (const void* buff, UINT btw, UINT* bw);	/* Write data to the open file */
-FRESULT pf_lseek (DWORD ofs);								/* Move file pointer of the open file */
-FRESULT pf_opendir (DIR* dj, const char* path);				/* Open a directory */
-FRESULT pf_readdir (DIR* dj, FILINFO* fno);					/* Read a directory item from the open directory */
+FRESULT pf_open (FATFS* fs, const char* path);							/* Open a file */
+FRESULT pf_read (FATFS* fs, void* buff, UINT btr, UINT* br);			/* Read data from the open file */
+FRESULT pf_write (FATFS* fs, const void* buff, UINT btw, UINT* bw, WRITE_STATE* ws); /* Write data to the open file */
+FRESULT pf_lseek (FATFS* fs, DWORD ofs);								/* Move file pointer of the open file */
+FRESULT pf_opendir (FATFS* fs, DIR* dj, const char* path);				/* Open a directory */
+FRESULT pf_readdir (FATFS* fs, DIR* dj, FILINFO* fno);					/* Read a directory item from the open directory */
 
 
 

@@ -76,12 +76,12 @@ void test() {
 	if (fp) errorHalt("pf_mount");
   
 	// Open test file.
-	if (pf_open("STUFF.TXT")) errorHalt("pf_open");
+	if (pf_open(&fs, "STUFF.TXT")) errorHalt("pf_open");
   
 	// Dump test file to Serial.
 	while (1) {
 		UINT nr;
-		if (pf_read(buf, sizeof(buf), &nr)) errorHalt("pf_read");
+		if (pf_read(&fs, buf, sizeof(buf), &nr)) errorHalt("pf_read");
 		if (nr == 0) break;
 		write(buf, nr);
 	}

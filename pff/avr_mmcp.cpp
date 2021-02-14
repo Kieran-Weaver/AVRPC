@@ -37,11 +37,6 @@
 #define CT_SD2				0x04	/* SD ver 2 */
 #define CT_BLOCK			0x08	/* Block addressing */
 
-
-static
-BYTE CardType;
-
-
 /*-----------------------------------------------------------------------*/
 /* Send a command packet to MMC                                          */
 /*-----------------------------------------------------------------------*/
@@ -104,9 +99,6 @@ DSTATUS disk_initialize (void)
 	BYTE n, cmd, ty, ocr[4];
 	UINT tmr;
 
-#if _USE_WRITE
-	if (CardType && SELECTING) disk_writep(0, 0);	/* Finalize write process if it is in progress */
-#endif
 	init_spi();		/* Initialize ports to control MMC */
 	DESELECT();
 	for (n = 10; n; n--) xmit_spi(0xFF);	/* 80 dummy clocks with CS=H */
@@ -133,7 +125,7 @@ DSTATUS disk_initialize (void)
 				ty = 0;
 		}
 	}
-	CardType = ty;
+//	CardType = ty;
 	DESELECT();
 	xmit_spi(0xFF);
 
@@ -158,7 +150,7 @@ DRESULT disk_readp (
 	UINT bc;
 
 
-	if (!(CardType & CT_BLOCK)) sector *= 512;	/* Convert to byte address if needed */
+//	if (!(CardType & CT_BLOCK)) sector *= 512;	/* Convert to byte address if needed */
 
 	res = RES_ERROR;
 	if (send_cmd(CMD17, sector) == 0) {	/* READ_SINGLE_BLOCK */
@@ -211,33 +203,33 @@ DRESULT disk_readp (
 
 #if _USE_WRITE
 DRESULT disk_writep (
+	WRITE_STATE* ws,
 	const BYTE *buff,	/* Pointer to the bytes to be written (NULL:Initiate/Finalize sector write) */
 	DWORD sc			/* Number of bytes to send, Sector number (LBA) or zero */
 )
 {
 	DRESULT res;
 	UINT bc;
-	static UINT wc;	/* Sector write counter */
 
 	res = RES_ERROR;
 
 	if (buff) {		/* Send data bytes */
 		bc = sc;
-		while (bc && wc) {		/* Send data bytes to the card */
+		while (bc && ws->wc) {		/* Send data bytes to the card */
 			xmit_spi(*buff++);
-			wc--; bc--;
+			ws->wc--; bc--;
 		}
 		res = RES_OK;
 	} else {
 		if (sc) {	/* Initiate sector write process */
-			if (!(CardType & CT_BLOCK)) sc *= 512;	/* Convert to byte address if needed */
+//			if (!(CardType & CT_BLOCK)) sc *= 512;	/* Convert to byte address if needed */
 			if (send_cmd(CMD24, sc) == 0) {			/* WRITE_SINGLE_BLOCK */
 				xmit_spi(0xFF); xmit_spi(0xFE);		/* Data block header */
-				wc = 512;							/* Set byte counter */
+				ws->wc = 512;							/* Set byte counter */
 				res = RES_OK;
 			}
 		} else {	/* Finalize sector write process */
-			bc = wc + 2;
+			bc = ws->wc + 2;
 			while (bc--) xmit_spi(0);	/* Fill left bytes and CRC with zeros */
 			if ((xmit_spi(0xFF) & 0x1F) == 0x05) {	/* Receive data resp and wait for end of write process in timeout of 500ms */
 				for (bc = 5000; xmit_spi(0xFF) != 0xFF && bc; bc--)	/* Wait for ready */
