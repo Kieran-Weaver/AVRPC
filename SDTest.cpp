@@ -69,21 +69,22 @@ void errorHalt(const char* msg) {
 }
 
 void test() {
-  uint8_t buf[32];
+	uint8_t buf[32];
   
-  // Initialize SD and file system.
-  if (pf_mount(&fs)) errorHalt("pf_mount");
+	// Initialize SD and file system.
+	uint8_t fp = pf_mount(&fs);
+	if (fp) errorHalt("pf_mount");
   
-  // Open test file.
-  if (pf_open("STUFF.TXT")) errorHalt("pf_open");
+	// Open test file.
+	if (pf_open("STUFF.TXT")) errorHalt("pf_open");
   
-  // Dump test file to Serial.
-  while (1) {
-    UINT nr;
-    if (pf_read(buf, sizeof(buf), &nr)) errorHalt("pf_read");
-    if (nr == 0) break;
-	write(buf, nr);
-  }
+	// Dump test file to Serial.
+	while (1) {
+		UINT nr;
+		if (pf_read(buf, sizeof(buf), &nr)) errorHalt("pf_read");
+		if (nr == 0) break;
+		write(buf, nr);
+	}
 }
 
 //------------------------------------------------------------------------------

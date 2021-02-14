@@ -28,7 +28,7 @@
 
 #include "pff.h"		/* Petit FatFs configurations and declarations */
 #include "diskio.h"		/* Declarations of low level disk I/O functions */
-
+#include <string.h>
 
 
 /*--------------------------------------------------------------------------
@@ -320,26 +320,7 @@
 
 
 static
-FATFS *FatFs;	/* Pointer to the file system object (logical drive) */
-
-
-/* Fill memory */
-static
-void mem_set (void* dst, int val, int cnt) {
-	char *d = (char*)dst;
-	while (cnt--) *d++ = (char)val;
-}
-
-/* Compare memory to memory */
-static
-int mem_cmp (const void* dst, const void* src, int cnt) {
-	const char *d = (const char *)dst, *s = (const char *)src;
-	int r = 0;
-	while (cnt-- && (r = *d++ - *s++) == 0) ;
-	return r;
-}
-
-
+FATFS *FatFs;	/* Pointer to the file system object (logical drive) */\
 
 /*-----------------------------------------------------------------------*/
 /* FAT access - Read value of a FAT entry                                */
@@ -524,7 +505,7 @@ FRESULT dir_find (
 		if (res != FR_OK) break;
 		c = dir[DIR_Name];	/* First character */
 		if (c == 0) { res = FR_NO_FILE; break; }	/* Reached to end of table */
-		if (!(dir[DIR_Attr] & AM_VOL) && !mem_cmp(dir, dj->fn, 11)) /* Is it a valid entry? */
+		if (!(dir[DIR_Attr] & AM_VOL) && !memcmp(dir, dj->fn, 11)) /* Is it a valid entry? */
 			break;
 		res = dir_next(dj);					/* Next entry */
 	} while (res == FR_OK);
@@ -592,7 +573,7 @@ FRESULT create_name (
 
 	/* Create file name in directory form */
 	sfn = dj->fn;
-	mem_set(sfn, ' ', 11);
+	memset(sfn, ' ', 11);
 	si = i = 0; ni = 8;
 	p = *path;
 	for (;;) {

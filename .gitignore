@@ -5,7 +5,8 @@
 *.o
 
 # Executable
-*.elf *.hex
+*.elf
+*.hex
 
 # Build files
 build/*
