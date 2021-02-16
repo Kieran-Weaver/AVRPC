@@ -1,0 +1,3 @@
+[submodule "MCUFRIEND_kbv"]
+	path = MCUFRIEND_kbv
+	url = https://github.com/prenticedavid/MCUFRIEND_kbv.git
