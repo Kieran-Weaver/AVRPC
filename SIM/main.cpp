@@ -12,6 +12,12 @@ int main(int argc, char **argv){
 		tft.refresh();
 		avrpc.Draw(tft);
 		i++;
+		if ((i & 255) == 0) {
+			tft.writeCommand(TFT_INVOFF);
+		}
+		if ((i & 511) == 0) {
+			tft.writeCommand(TFT_INVON);
+		}
 	}
 	return 0;
 }
