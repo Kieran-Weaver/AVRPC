@@ -29,7 +29,7 @@ AVRPC::AVRPC(){
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	this->window = glfwCreateWindow(1280, 720, "AVRPC Simulator", nullptr, nullptr);
+	this->window = glfwCreateWindow(768, 960, "AVRPC Simulator", nullptr, nullptr);
 	if (!this->window){
 		glfwTerminate();
 		std::exit(0);
@@ -73,7 +73,7 @@ AVRPC::AVRPC(){
 	glUniform1i(glGetUniformLocation(this->PROG, "Texture"), 0);
 }
 
-void AVRPC::Draw(PDQ_ST7735& sim){
+void AVRPC::Draw(TFT_ILI9163& sim){
 	const std::vector<uint16_t>& pixels = sim.getPixels();
 	sim.getDims(this->w, this->h);
 	glUseProgram(this->PROG);

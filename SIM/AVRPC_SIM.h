@@ -1,13 +1,13 @@
 #ifndef AVRPC_SIM_HPP
 #define AVRPC_SIM_HPP
-#include "PDQ_ST7735.h"
+#include "TFT_ILI9163.h"
 #include <cstdint>
 struct GLFWwindow;
 class AVRPC{
 public:
 	AVRPC();
 	~AVRPC();
-	void Draw(PDQ_ST7735& sim);
+	void Draw(TFT_ILI9163& sim);
 	operator bool();
 private:
 	uint32_t texID;

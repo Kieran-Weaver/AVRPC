@@ -1,12 +1,12 @@
-#ifndef PDQ_ST7735_HPP
-#define PDQ_ST7735_HPP
+#ifndef TFT_ILI9163_HPP
+#define TFT_ILI9163_HPP
 #include <vector>
 #include <array>
 #include <cstdint>
-class PDQ_ST7735{
+class TFT_ILI9163{
 	public:
 // Universal high-level API
-		PDQ_ST7735();
+		TFT_ILI9163();
 		void begin();
 		void setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
 		void pushColor(uint16_t color);
