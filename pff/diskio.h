@@ -32,7 +32,7 @@ typedef struct {
 /* Prototypes for disk control functions */
 
 DSTATUS disk_initialize (void);
-DRESULT disk_readp (BYTE* buff, DWORD sector, UINT offset, UINT count);
+DRESULT disk_read (BYTE* buff, DWORD sector);
 DRESULT disk_writep (WRITE_STATE* ws, const BYTE* buff, DWORD sc);
 
 #define STA_NOINIT		0x01	/* Drive not initialized */

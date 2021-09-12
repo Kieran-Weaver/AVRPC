@@ -97,7 +97,6 @@ BYTE send_cmd (
 DSTATUS disk_initialize (void)
 {
 	BYTE n, cmd, ty, ocr[4];
-	UINT tmr;
 
 	init_spi();		/* Initialize ports to control MMC */
 	DESELECT();
@@ -105,14 +104,13 @@ DSTATUS disk_initialize (void)
 
 	ty = 0;
 	if (send_cmd(CMD0, 0) == 1) {			/* GO_IDLE_STATE */
-		if (send_cmd(CMD8, 0x1AA) == 1) {	/* SDv2 */
-			for (n = 0; n < 4; n++) ocr[n] = xmit_spi(0xFF);		/* Get trailing return value of R7 resp */
-			if (ocr[2] == 0x01 && ocr[3] == 0xAA) {			/* The card can work at vdd range of 2.7-3.6V */
-				for (tmr = 10000; tmr && send_cmd(ACMD41, 1UL << 30); tmr--) _delay_us(100);	/* Wait for leaving idle state (ACMD41 with HCS bit) */
-				if (tmr && send_cmd(CMD58, 0) == 0) {		/* Check CCS bit in the OCR */
-					for (n = 0; n < 4; n++) ocr[n] = xmit_spi(0xFF);
-					ty = (ocr[0] & 0x40) ? CT_SD2 | CT_BLOCK : CT_SD2;	/* SDv2 (HC or SC) */
-				}
+		if (send_cmd(CMD8, 0x1AA) == 1) {	/* SDv2, assume valid vdd range */
+			for (n = 0; n < 4; n++) xmit_spi(0xFF);	/* Get trailing return value of R7 resp */
+			while (send_cmd(ACMD41, 1UL << 30)) _delay_us(100);
+			if (send_cmd(CMD58, 0) == 0) { /* Check CCS bit in the OCR */
+				ty = CT_SD2;
+				if (xmit_spi(0xFF) & 0x40) ty |= CT_BLOCK; /* SDv2 (HC or SC) */
+				for (n = 0; n < 3; n++) xmit_spi(0xFF);
 			}
 		} else {							/* SDv1 or MMCv3 */
 			if (send_cmd(ACMD41, 0) <= 1) 	{
@@ -120,8 +118,8 @@ DSTATUS disk_initialize (void)
 			} else {
 				ty = CT_MMC; cmd = CMD1;	/* MMCv3 */
 			}
-			for (tmr = 10000; tmr && send_cmd(cmd, 0); tmr--) _delay_us(100);	/* Wait for leaving idle state */
-			if (!tmr || send_cmd(CMD16, 512) != 0)			/* Set R/W block length to 512 */
+			while (send_cmd(cmd, 0)) _delay_us(100); /* Wait for leaving idle state */
+			if (send_cmd(CMD16, 512) != 0)           /* Set R/W block length to 512 */
 				ty = 0;
 		}
 	}
@@ -135,58 +133,44 @@ DSTATUS disk_initialize (void)
 
 
 /*-----------------------------------------------------------------------*/
-/* Read partial sector                                                   */
+/* Read sector                                                   */
 /*-----------------------------------------------------------------------*/
 
-DRESULT disk_readp (
+DRESULT disk_read (
 	BYTE *buff,		/* Pointer to the read buffer (NULL:Forward to the stream) */
-	DWORD sector,	/* Sector number (LBA) */
-	UINT offset,	/* Byte offset to read from (0..511) */
-	UINT count		/* Number of bytes to read (ofs + cnt mus be <= 512) */
+	DWORD sector	/* Sector number (LBA) */
 )
 {
 	DRESULT res;
-	BYTE rc;
-	UINT bc;
+	BYTE rc = 0;
+	UINT count = 512; /* Number of bytes to read (ofs + cnt mus be <= 512) */
 
 
 //	if (!(CardType & CT_BLOCK)) sector *= 512;	/* Convert to byte address if needed */
 
 	res = RES_ERROR;
 	if (send_cmd(CMD17, sector) == 0) {	/* READ_SINGLE_BLOCK */
-
-		bc = 40000;	/* Time counter */
-		do {				/* Wait for data packet */
+		
+		while (rc != 0xFE) {
 			rc = xmit_spi(0xFF);
-		} while (rc == 0xFF && --bc);
-
-		if (rc == 0xFE) {	/* A data packet arrived */
-			if (buff) {
-
-				bc = 512 + 2 - offset - count;	/* Number of trailing bytes to skip */
-
-				/* Skip leading bytes */
-				while (offset--) xmit_spi(0xFF);
-
-				/* Receive a part of the sector */
-				/* Store data to the memory */
-				do {
-					*buff++ = xmit_spi(0xFF);
-				} while (--count);
-				
-				/* Skip trailing bytes and CRC */
-				do {
-					xmit_spi(0xFF);
-				} while (--bc);
-			} else {
-				bc = 514;
-				do {
-					xmit_spi(0xFF);
-				} while (--bc);
-			}
-
-			res = RES_OK;
 		}
+
+		/* A data packet arrived */
+//		if (rc == 0xFE) {	
+			/* Skip leading bytes */
+//			while (offset--) xmit_spi(0xFF); Leading bytes always 0
+
+			/* Receive a part of the sector */
+			/* Store data to the memory */
+		do {
+			*buff++ = xmit_spi(0xFF);
+		} while (--count);
+				
+		/* Skip trailing bytes and CRC */
+		xmit_spi(0xFF);
+		xmit_spi(0xFF);
+
+		res = RES_OK;
 	}
 
 	DESELECT();

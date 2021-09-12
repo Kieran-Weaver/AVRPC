@@ -318,6 +318,8 @@
 
 ---------------------------------------------------------------------------*/
 
+static 	BYTE    sect[512];  /* current sector */
+
 /*-----------------------------------------------------------------------*/
 /* FAT access - Read value of a FAT entry                                */
 /*-----------------------------------------------------------------------*/
@@ -341,10 +343,13 @@ CLUST get_fat (	/* 1:IO error, Else:Cluster status */
 		bc = (UINT)clst; bc += bc / 2;
 		ofs = bc % 512; bc /= 512;
 		if (ofs != 511) {
-			if (disk_readp(buf, fs->fatbase + bc, ofs, 2)) break;
+			if (disk_read(sect, fs->fatbase + bc)) break;
+			memcpy(buf, sect + ofs, 2);
 		} else {
-			if (disk_readp(buf, fs->fatbase + bc, 511, 1)) break;
-			if (disk_readp(buf+1, fs->fatbase + bc + 1, 0, 1)) break;
+			if (disk_read(sect, fs->fatbase + bc)) break;
+			buf[0] = sect[511];
+			if (disk_read(sect, fs->fatbase + bc + 1)) break;
+			buf[1] = sect[0];
 		}
 		wc = LD_WORD(buf);
 		return (clst & 1) ? (wc >> 4) : (wc & 0xFFF);
@@ -352,12 +357,14 @@ CLUST get_fat (	/* 1:IO error, Else:Cluster status */
 #endif
 #if _FS_FAT16
 	case FS_FAT16 :
-		if (disk_readp(buf, fs->fatbase + clst / 256, ((UINT)clst % 256) * 2, 2)) break;
+		if (disk_read(sect, fs->fatbase + clst / 256)) break;
+		memcpy(buf, sect + ((UINT)clst % 256) * 2, 2);
 		return LD_WORD(buf);
 #endif
 #if _FS_FAT32
 	case FS_FAT32 :
-		if (disk_readp(buf, fs->fatbase + clst / 128, ((UINT)clst % 128) * 4, 4)) break;
+		if (disk_read(sect, fs->fatbase + clst / 128)) break;
+		memcpy(buf, sect + ((UINT)clst % 128) * 4, 4);
 		return LD_DWORD(buf) & 0x0FFFFFFF;
 #endif
 	}
@@ -493,9 +500,8 @@ FRESULT dir_find (
 	if (res != FR_OK) return res;
 
 	do {
-		res = disk_readp(dir, dj->sect, (dj->index % 16) * 32, 32)	/* Read an entry */
-			? FR_DISK_ERR : FR_OK;
-		if (res != FR_OK) break;
+		if ((res = (disk_read(sect, dj->sect) ? FR_DISK_ERR : FR_OK))) break; /* Read an entry */
+		memcpy(dir, sect + (dj->index % 16) * 32, 32);
 		c = dir[DIR_Name];	/* First character */
 		if (c == 0) { res = FR_NO_FILE; break; }	/* Reached to end of table */
 		if (!(dir[DIR_Attr] & AM_VOL) && !memcmp(dir, dj->fn, 11)) /* Is it a valid entry? */
@@ -526,9 +532,8 @@ FRESULT dir_read (
 
 	res = FR_NO_FILE;
 	while (dj->sect) {
-		res = disk_readp(dir, dj->sect, (dj->index % 16) * 32, 32)	/* Read an entry */
-			? FR_DISK_ERR : FR_OK;
-		if (res != FR_OK) break;
+		if (res = disk_read(sect, dj->sect)) break; /* Read an entry */
+		memcpy(dir, dj->sect + (dj->index % 16) * 32, 32);
 		c = dir[DIR_Name];
 		if (c == 0) { res = FR_NO_FILE; break; }	/* Reached to end of table */
 		a = dir[DIR_Attr] & AM_MASK;
@@ -696,18 +701,23 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 static
 BYTE check_fs (	/* 0:The FAT boot record, 1:Valid boot record but not an FAT, 2:Not a boot record, 3:Error */
 	BYTE *buf,	/* Working buffer */
-	DWORD sect	/* Sector# (lba) to check if it is an FAT boot record or not */
+	DWORD fsect	/* Sector# (lba) to check if it is an FAT boot record or not */
 )
 {
-	if (disk_readp(buf, sect, 510, 2))		/* Read the boot record */
+	if (disk_read(sect, fsect)) /* Read the boot record */
 		return 3;
-	if (LD_WORD(buf) != 0xAA55)				/* Check record signature */
-		return 2;
 
-	if (!_FS_32ONLY && !disk_readp(buf, sect, BS_FilSysType, 2) && LD_WORD(buf) == 0x4146)	/* Check FAT12/16 */
+	if (LD_WORD(sect + 510) != 0xAA55) /* Check record signature */
+		return 2;	
+	
+	if (!_FS_32ONLY && LD_WORD(sect + BS_FilSysType) == 0x4146)
+	/* Check FAT12/16 */
 		return 0;
-	if (_FS_FAT32 && !disk_readp(buf, sect, BS_FilSysType32, 2) && LD_WORD(buf) == 0x4146)	/* Check FAT32 */
+
+	if (_FS_FAT32 && LD_WORD(sect + BS_FilSysType32) == 0x4146)
+	/* Check FAT32 */
 		return 0;
+	
 	return 1;
 }
 
@@ -741,9 +751,10 @@ FRESULT pf_mount (
 	fmt = check_fs(buf, bsect);			/* Check sector 0 as an SFD format */
 	if (fmt == 1) {						/* Not an FAT boot record, it may be FDISK format */
 		/* Check a partition listed in top of the partition table */
-		if (disk_readp(buf, bsect, MBR_Table, 16)) {	/* 1st partition entry */
+		if (disk_read(sect, bsect)) { /* 1st partition entry */
 			fmt = 3;
 		} else {
+			memcpy(buf, sect + MBR_Table, 16);
 			if (buf[4]) {					/* Is the partition existing? */
 				bsect = LD_DWORD(&buf[8]);	/* Partition offset in LBA */
 				fmt = check_fs(buf, bsect);	/* Check the partition */
@@ -754,7 +765,8 @@ FRESULT pf_mount (
 	if (fmt) return FR_NO_FILESYSTEM;	/* No valid FAT patition is found */
 
 	/* Initialize the file system object */
-	if (disk_readp(buf, bsect, 13, sizeof (buf))) return FR_DISK_ERR;
+	if (disk_read(sect, bsect)) return FR_DISK_ERR;
+	memcpy(buf, sect + 13, sizeof(buf));
 
 	fsize = LD_WORD(buf+BPB_FATSz16-13);				/* Number of sectors per FAT */
 	if (!fsize) fsize = LD_DWORD(buf+BPB_FATSz32-13);
@@ -841,7 +853,7 @@ FRESULT pf_read (
 {
 	DRESULT dr;
 	CLUST clst;
-	DWORD sect, remain;
+	DWORD fsect, remain;
 	UINT rcnt;
 	BYTE cs, *rbuff = (BYTE*)buff;  // whg
 
@@ -864,13 +876,14 @@ FRESULT pf_read (
 				if (clst <= 1) ABORT(FR_DISK_ERR);
 				fs->curr_clust = clst;				/* Update current cluster */
 			}
-			sect = clust2sect(fs, fs->curr_clust);		/* Get current sector */
-			if (!sect) ABORT(FR_DISK_ERR);
-			fs->dsect = sect + cs;
+			fsect = clust2sect(fs, fs->curr_clust);		/* Get current sector */
+			if (!fsect) ABORT(FR_DISK_ERR);
+			fs->dsect = fsect + cs;
 		}
 		rcnt = 512 - (UINT)fs->fptr % 512;			/* Get partial sector data from sector buffer */
 		if (rcnt > btr) rcnt = btr;
-		dr = disk_readp(!buff ? 0 : rbuff, fs->dsect, (UINT)fs->fptr % 512, rcnt);
+		dr = disk_read(sect, fs->dsect);
+		memcpy(rbuff, sect + ((UINT)fs->fptr % 512), rcnt);
 		if (dr) ABORT(FR_DISK_ERR);
 		fs->fptr += rcnt; rbuff += rcnt;			/* Update pointers and counters */
 		btr -= rcnt; *br += rcnt;
