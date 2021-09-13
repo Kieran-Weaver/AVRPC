@@ -10,7 +10,6 @@
 /---------------------------------------------------------------------------*/
 
 #define	_USE_READ	1	/* Enable pf_read() function */
-#define _USE_PATH   0   /* Enable directories other than the root directory */
 #define	_USE_DIR	0	/* Enable pf_opendir() and pf_readdir() function */
 #define	_USE_LSEEK	0	/* Enable pf_lseek() function */
 #define	_USE_WRITE	0	/* Enable pf_write() function */
@@ -19,6 +18,9 @@
 #define _FS_FAT16	0	/* Enable FAT16 */
 #define _FS_FAT32	1	/* Enable FAT32 */
 
+#define _USE_PATH   0   /* Enable directories other than the root directory */
+#define _USE_SIZE32 0   /* Enable 32-bit file sizes */
+#define _USE_RANGE  0   /* Enable range checking */
 
 /*---------------------------------------------------------------------------/
 / Locale and Namespace Configurations

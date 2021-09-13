@@ -41,15 +41,20 @@ extern "C" {
 typedef struct {
 	BYTE	fs_type;	/* FAT sub type */
 	BYTE	flag;		/* File status flags */
-	BYTE	csize;		/* Number of sectors per cluster */
+	BYTE	csize;		/* Log2 of number of sectors per cluster */
 	BYTE	pad1;
 	WORD	n_rootdir;	/* Number of root directory entries (0 on FAT32) */
 	CLUST	n_fatent;	/* Number of FAT entries (= number of clusters + 2) */
 	DWORD	fatbase;	/* FAT start sector */
 	DWORD	dirbase;	/* Root directory start sector (Cluster# on FAT32) */
 	DWORD	database;	/* Data start sector */
+#if _USE_SIZE32
 	DWORD	fptr;		/* File R/W pointer */
 	DWORD	fsize;		/* File size */
+#else
+	WORD	fptr;		/* File R/W pointer */
+	WORD	fsize;		/* File size */
+#endif
 	CLUST	org_clust;	/* File start cluster */
 	CLUST	curr_clust;	/* File current cluster */
 	DWORD	dsect;		/* File current data sector */

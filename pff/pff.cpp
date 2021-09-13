@@ -332,8 +332,10 @@ CLUST get_fat (	/* 1:IO error, Else:Cluster status */
 {
 	BYTE buf[4];
 
+#if _USE_RANGE
 	if (clst < 2 || clst >= fs->n_fatent)	/* Range check */
 		return 1;
+#endif
 
 	switch (fs->fs_type) {
 #if _FS_FAT12
@@ -386,8 +388,10 @@ DWORD clust2sect (	/* !=0: Sector number, 0: Failed - invalid cluster# */
 )
 {
 	clst -= 2;
+#if _USE_RANGE
 	if (clst >= (fs->n_fatent - 2)) return 0;		/* Invalid cluster# */
-	return (DWORD)clst * fs->csize + fs->database;
+#endif
+	return ((DWORD)clst << fs->csize) + fs->database;
 }
 
 
@@ -424,8 +428,10 @@ FRESULT dir_rewind (
 
 	dj->index = 0;
 	clst = dj->sclust;
+#if _USE_RANGE
 	if (clst == 1 || clst >= fs->n_fatent)	/* Check start cluster range */
 		return FR_DISK_ERR;
+#endif
 	if (_FS_FAT32 && !clst && (_FS_32ONLY || fs->fs_type == FS_FAT32))	/* Replace cluster# 0 with root cluster# if in FAT32 */
 		clst = (CLUST)fs->dirbase;
 	dj->clust = clst;						/* Current cluster */
@@ -462,7 +468,7 @@ FRESULT dir_next (	/* FR_OK:Succeeded, FR_NO_FILE:End of table */
 				return FR_NO_FILE;
 		}
 		else {					/* Dynamic table */
-			if (((i / 16) & (fs->csize - 1)) == 0) {	/* Cluster changed? */
+			if (((i / 16) & ((1 << fs->csize) - 1)) == 0) {	/* Cluster changed? */
 				clst = get_fat(fs, dj->clust);		/* Get next cluster */
 				if (clst <= 1) return FR_DISK_ERR;
 				if (clst >= fs->n_fatent)		/* When it reached end of dynamic table */
@@ -775,15 +781,22 @@ FRESULT pf_mount (
 	fsize = LD_WORD(buf+BPB_FATSz16-13);				/* Number of sectors per FAT */
 	if (!fsize) fsize = LD_DWORD(buf+BPB_FATSz32-13);
 
-	fsize *= buf[BPB_NumFATs-13];						/* Number of sectors in FAT area */
+	if (buf[BPB_NumFATs-13] == 2) {
+		fsize += fsize; /* Number of sectors in FAT area */
+	}
+
 	fs->fatbase = bsect + LD_WORD(buf+BPB_RsvdSecCnt-13); /* FAT start sector (lba) */
-	fs->csize = buf[BPB_SecPerClus-13];					/* Number of sectors per cluster */
+	fs->csize = ffs(buf[BPB_SecPerClus-13]) - 1;	/* Number of sectors per cluster */
 	fs->n_rootdir = LD_WORD(buf+BPB_RootEntCnt-13);		/* Nmuber of root directory entries */
+#if _FS_32ONLY
+	tsect = LD_DWORD(buf+BPB_TotSec32-13); /* Number of sectors on the file system */
+#else
 	tsect = LD_WORD(buf+BPB_TotSec16-13);				/* Number of sectors on the file system */
 	if (!tsect) tsect = LD_DWORD(buf+BPB_TotSec32-13);
-	mclst = (tsect						/* Last cluster# + 1 */
+#endif
+	mclst = ((tsect						/* Last cluster# + 1 */
 		- LD_WORD(buf+BPB_RsvdSecCnt-13) - fsize - fs->n_rootdir / 16
-		) / fs->csize + 2;
+		) >> fs->csize) + 2;
 	fs->n_fatent = (CLUST)mclst;
 
 	fmt = 0;							/* Determine the FAT sub type */
@@ -821,6 +834,7 @@ FRESULT pf_open (
 {
 	FRESULT res;
 	DIR dj;
+	DWORD tmp;
 	BYTE sp[12], dir[32];
 
 	if (!fs) return FR_NOT_ENABLED;		/* Check file system */
@@ -833,7 +847,13 @@ FRESULT pf_open (
 		return FR_NO_FILE;
 
 	fs->org_clust = get_clust(fs, dir);		/* File start cluster */
-	fs->fsize = LD_DWORD(dir+DIR_FileSize);	/* File size */
+	tmp = LD_DWORD(dir+DIR_FileSize);
+#if _USE_SIZE32 == 0
+	if (tmp > 65535) {
+		fs->fsize = 65535;
+	}
+#endif
+	fs->fsize = tmp;	/* File size */
 	fs->fptr = 0;						/* File pointer */
 	fs->flag = FA_OPENED;
 
@@ -857,7 +877,12 @@ FRESULT pf_read (
 {
 	DRESULT dr;
 	CLUST clst;
-	DWORD fsect, remain;
+	DWORD fsect;
+#if _USE_SIZE32
+	DWORD remain;
+#else
+	WORD remain;
+#endif
 	UINT rcnt;
 	BYTE cs, *rbuff = (BYTE*)buff;  // whg
 
@@ -871,7 +896,7 @@ FRESULT pf_read (
 
 	while (btr)	{									/* Repeat until all data transferred */
 		if ((fs->fptr % 512) == 0) {				/* On the sector boundary? */
-			cs = (BYTE)(fs->fptr / 512 & (fs->csize - 1));	/* Sector offset in the cluster */
+			cs = (BYTE)(fs->fptr / 512 & ((1 << fs->csize) - 1));	/* Sector offset in the cluster */
 			if (!cs) {								/* On the cluster boundary? */
 				if (fs->fptr == 0)					/* On the top of the file? */
 					clst = fs->org_clust;
@@ -913,7 +938,12 @@ FRESULT pf_write (
 )
 {
 	CLUST clst;
-	DWORD sect, remain;
+	DWORD sect;
+#if _USE_SIZE32
+	DWORD remain;
+#else
+	WORD remain;
+#endif
 	const BYTE *p = (BYTE*)buff;  // whg
 	BYTE cs;
 	UINT wcnt;
@@ -929,14 +959,18 @@ FRESULT pf_write (
 		return FR_OK;
 	} else {		/* Write data request */
 		if (!(fs->flag & FA__WIP))		/* Round-down fptr to the sector boundary */
+#if _USE_SIZE32
 			fs->fptr &= 0xFFFFFE00;
+#else
+			fs->fptr &= 0xFE00;
+#endif
 	}
 	remain = fs->fsize - fs->fptr;
 	if (btw > remain) btw = (UINT)remain;			/* Truncate btw by remaining bytes */
 
 	while (btw)	{									/* Repeat until all data transferred */
 		if ((UINT)fs->fptr % 512 == 0) {			/* On the sector boundary? */
-			cs = (BYTE)(fs->fptr / 512 & (fs->csize - 1));	/* Sector offset in the cluster */
+			cs = (BYTE)(fs->fptr / 512 & ((1 << fs->csize) - 1));	/* Sector offset in the cluster */
 			if (!cs) {								/* On the cluster boundary? */
 				if (fs->fptr == 0)					/* On the top of the file? */
 					clst = fs->org_clust;
@@ -989,7 +1023,7 @@ FRESULT pf_lseek (
 	ifptr = fs->fptr;
 	fs->fptr = 0;
 	if (ofs > 0) {
-		bcs = (DWORD)fs->csize * 512;	/* Cluster size (byte) */
+		bcs = (((DWORD)1) << (fs->csize + 9));	/* Cluster size (byte) */
 		if (ifptr > 0 &&
 			(ofs - 1) / bcs >= (ifptr - 1) / bcs) {	/* When seek to same or following cluster, */
 			fs->fptr = (ifptr - 1) & ~(bcs - 1);	/* start from the current cluster */
@@ -1009,7 +1043,7 @@ FRESULT pf_lseek (
 		fs->fptr += ofs;
 		sect = clust2sect(fs, clst);		/* Current sector */
 		if (!sect) ABORT(FR_DISK_ERR);
-		fs->dsect = sect + (fs->fptr / 512 & (fs->csize - 1));
+		fs->dsect = sect + (fs->fptr / 512 & ((1 << fs->csize) - 1));
 	}
 
 	return FR_OK;
