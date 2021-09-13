@@ -649,8 +649,6 @@ void get_fileinfo (		/* No return code */
 }
 #endif /* _USE_DIR */
 
-
-
 /*-----------------------------------------------------------------------*/
 /* Follow a file path                                                    */
 /*-----------------------------------------------------------------------*/
@@ -665,10 +663,12 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 {
 	FRESULT res;
 
+	dj->sclust = 0;						/* Set start directory (always root dir) */
+
+#if _USE_PATH
 
 	while (*path == ' ') path++;		/* Strip leading spaces */
 	if (*path == '/') path++;			/* Strip heading separator if exist */
-	dj->sclust = 0;						/* Set start directory (always root dir) */
 
 	if ((BYTE)*path < ' ') {			/* Null path means the root directory */
 		res = dir_rewind(fs, dj);
@@ -688,11 +688,15 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 		}
 	}
 
+#else
+	
+	if ((res = create_name(dj, &path))) return res;
+	res = dir_find(fs, dj, dir);
+
+#endif
+
 	return res;
 }
-
-
-
 
 /*-----------------------------------------------------------------------*/
 /* Check a sector if it is an FAT boot record                            */
