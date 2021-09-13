@@ -561,6 +561,7 @@ FRESULT dir_read (
 /* Pick a segment and create the object name in directory form           */
 /*-----------------------------------------------------------------------*/
 
+#if _USE_PATH
 
 static
 FRESULT create_name (
@@ -605,15 +606,14 @@ FRESULT create_name (
 			sfn[i++] = c;
 		}
 	}
-	*path = &p[si];						/* Rerurn pointer to the next segment */
+	*path = &p[si];						/* Return pointer to the next segment */
 
 	sfn[11] = (c <= ' ') ? 1 : 0;		/* Set last segment flag if end of path */
 
 	return FR_OK;
 }
 
-
-
+#endif
 
 /*-----------------------------------------------------------------------*/
 /* Get file information from directory entry                             */
@@ -696,7 +696,7 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 
 #else
 	
-	if ((res = create_name(dj, &path))) return res;
+	memcpy(dj->fn, path, 11);
 	res = dir_find(fs, dj, dir);
 
 #endif
@@ -778,8 +778,12 @@ FRESULT pf_mount (
 	if (disk_read(sect, bsect)) return FR_DISK_ERR;
 	memcpy(buf, sect + 13, sizeof(buf));
 
+#if _FS_32ONLY
+	fsize = LD_DWORD(buf+BPB_FATSz32-13);
+#else
 	fsize = LD_WORD(buf+BPB_FATSz16-13);				/* Number of sectors per FAT */
 	if (!fsize) fsize = LD_DWORD(buf+BPB_FATSz32-13);
+#endif
 
 	if (buf[BPB_NumFATs-13] == 2) {
 		fsize += fsize; /* Number of sectors in FAT area */
@@ -850,8 +854,11 @@ FRESULT pf_open (
 	tmp = LD_DWORD(dir+DIR_FileSize);
 #if _USE_SIZE32 == 0
 	if (tmp > 65535) {
-		fs->fsize = 65535;
+		tmp = 65535;
 	}
+#endif
+#if _USE_BYTE == 0
+	tmp = tmp >> 9;
 #endif
 	fs->fsize = tmp;	/* File size */
 	fs->fptr = 0;						/* File pointer */
@@ -867,7 +874,7 @@ FRESULT pf_open (
 /* Read File                                                             */
 /*-----------------------------------------------------------------------*/
 #if _USE_READ
-
+#if _USE_BYTE
 FRESULT pf_read (
 	FATFS *fs,
 	void* buff,		/* Pointer to the read buffer (NULL:Forward data to the stream)*/
@@ -920,7 +927,47 @@ FRESULT pf_read (
 
 	return FR_OK;
 }
-#endif
+
+#else /* _USE_BYTE */
+
+FRESULT pf_read (FATFS* fs, BYTE** data, BYTE* done) {
+	DRESULT dr;
+	CLUST clst;
+	DWORD fsect;
+	BYTE cs;
+
+	*data = nullptr;
+	if (!fs) return FR_NOT_ENABLED;		/* Check file system */
+	if (!(fs->flag & FA_OPENED))		/* Check if opened */
+		return FR_NOT_OPENED;
+
+	cs = (BYTE)(fs->fptr & ((1 << fs->csize) - 1));
+	
+	if (!cs) {								/* On the cluster boundary? */
+		if (fs->fptr == 0)					/* On the top of the file? */
+			clst = fs->org_clust;
+		else
+			clst = get_fat(fs, fs->curr_clust);
+		if (clst <= 1) ABORT(FR_DISK_ERR);
+		fs->curr_clust = clst;				/* Update current cluster */
+	}
+
+	fsect = clust2sect(fs, fs->curr_clust);		/* Get current sector */
+	if (!fsect) ABORT(FR_DISK_ERR);
+	fs->dsect = fsect + cs;
+
+	dr = disk_read(sect, fs->dsect);
+	if (dr) ABORT(FR_DISK_ERR);
+	fs->fptr++;
+
+	*data = sect;
+	*done = (fs->fptr == fs->fsize);
+	return FR_OK;
+}
+
+#endif /* _USE_BYTE */
+
+#endif /* _USE_READ */
 
 
 

@@ -5,6 +5,7 @@
 #include "pff/pff.h"
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 #include <avr/io.h>
 
 const uint16_t MIN_2X_BAUD = F_CPU/(4*(2*0XFFF + 1)) + 1;
@@ -69,21 +70,21 @@ void errorHalt(const char* msg) {
 }
 
 void test() {
-	uint8_t buf[32];
+	uint8_t *buf;
   
 	// Initialize SD and file system.
 	uint8_t fp = pf_mount(&fs);
 	if (fp) errorHalt("pf_mount");
   
 	// Open test file.
-	if (pf_open(&fs, "STUFF.TXT")) errorHalt("pf_open");
+	if (pf_open(&fs, "STUFF   TXT")) errorHalt("pf_open");
   
 	// Dump test file to Serial.
 	while (1) {
-		UINT nr;
-		if (pf_read(&fs, buf, sizeof(buf), &nr)) errorHalt("pf_read");
-		if (nr == 0) break;
-		write(buf, nr);
+		uint8_t nr;
+		if (pf_read(&fs, &buf, &nr)) errorHalt("pf_read");
+		if (nr == 1) break;
+		write(buf, strlen((const char*)buf));
 	}
 }
 

@@ -51,9 +51,12 @@ typedef struct {
 #if _USE_SIZE32
 	DWORD	fptr;		/* File R/W pointer */
 	DWORD	fsize;		/* File size */
-#else
+#elif _USE_BYTE
 	WORD	fptr;		/* File R/W pointer */
 	WORD	fsize;		/* File size */
+#else
+	BYTE    fptr;       /* File R/W pointer */
+	BYTE	fsize;		/* File size */
 #endif
 	CLUST	org_clust;	/* File start cluster */
 	CLUST	curr_clust;	/* File current cluster */
@@ -105,7 +108,11 @@ typedef enum {
 
 FRESULT pf_mount (FATFS* fs);								/* Mount/Unmount a logical drive */
 FRESULT pf_open (FATFS* fs, const char* path);							/* Open a file */
+#if _USE_BYTE
 FRESULT pf_read (FATFS* fs, void* buff, UINT btr, UINT* br);			/* Read data from the open file */
+#else
+FRESULT pf_read (FATFS* fs, BYTE** data, BYTE* done);  /* Read 1 full sector, returns pointer to data */
+#endif
 FRESULT pf_write (FATFS* fs, const void* buff, UINT btw, UINT* bw, WRITE_STATE* ws); /* Write data to the open file */
 FRESULT pf_lseek (FATFS* fs, DWORD ofs);								/* Move file pointer of the open file */
 FRESULT pf_opendir (FATFS* fs, DIR* dj, const char* path);				/* Open a directory */

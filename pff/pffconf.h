@@ -18,6 +18,7 @@
 #define _FS_FAT16	0	/* Enable FAT16 */
 #define _FS_FAT32	1	/* Enable FAT32 */
 
+#define _USE_BYTE   0   /* Enable reading in bytes instead of sectors */
 #define _USE_PATH   0   /* Enable directories other than the root directory */
 #define _USE_SIZE32 0   /* Enable 32-bit file sizes */
 #define _USE_RANGE  0   /* Enable range checking */

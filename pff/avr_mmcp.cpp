@@ -96,7 +96,7 @@ BYTE send_cmd (
 
 DSTATUS disk_initialize (void)
 {
-	BYTE n, cmd, ty, ocr[4];
+	BYTE n, cmd, ty;
 
 	init_spi();		/* Initialize ports to control MMC */
 	DESELECT();
