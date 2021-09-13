@@ -7,11 +7,12 @@ OBJCOPY = avr-objcopy
 SIZE    = avr-size --format=avr --mcu=$(MCU)
 CC      = avr-gcc
 CXX     = avr-g++
+BOOT_ADDR = 0x7000
 
 INC_FLAGS := -I .
 CPPFLAGS = $(INC_FLAGS) -MT $@ -MMD -MP -MF build/$*.d
-CFLAGS   = -Wall -Os -g -mmcu=$(MCU) -DF_CPU=$(F_CPU) $(INC_FLAGS) -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -mrelax -flto
-CXXFLAGS = -Wall -Os -g -mmcu=$(MCU) -DF_CPU=$(F_CPU) -std=c++17   -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -mrelax -flto
+CFLAGS   = -Wall -Os -g -mmcu=$(MCU) -DF_CPU=$(F_CPU) $(INC_FLAGS) -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -mrelax -flto -DBOOT_ADDR=$(BOOT_ADDR)
+CXXFLAGS = -Wall -Os -g -mmcu=$(MCU) -DF_CPU=$(F_CPU) -std=c++17   -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -mrelax -flto -DBOOT_ADDR=$(BOOT_ADDR)
 
 SRCS=SDTest.cpp $(shell find pff -path "*.cpp") $(shell find . -path "*.S")
 OBJS=$(patsubst %.S, ./build/%.o, $(patsubst %.cpp, ./build/%.o, $(SRCS)))
@@ -34,10 +35,10 @@ clean:
 
 ./build/%.o: ./%.S
 	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -c -o $@ $< -flto
 
 $(TARGET).elf: $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $(TARGET).elf $(OBJS) -flto
+	$(CXX) $(CXXFLAGS) -o $(TARGET).elf $(OBJS)
 
 $(TARGET).hex: $(TARGET).elf
 	rm -f $(TARGET).hex

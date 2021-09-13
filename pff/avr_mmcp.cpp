@@ -67,9 +67,9 @@ BYTE send_cmd (
 	xmit_spi((BYTE)(arg >> 16));		/* Argument[23..16] */
 	xmit_spi((BYTE)(arg >> 8));			/* Argument[15..8] */
 	xmit_spi((BYTE)arg);				/* Argument[7..0] */
-	n = 0x01;							/* Dummy CRC + Stop */
 	if (cmd == CMD0) n = 0x95;			/* Valid CRC for CMD0(0) */
-	if (cmd == CMD8) n = 0x87;			/* Valid CRC for CMD8(0x1AA) */
+	else if (cmd == CMD8) n = 0x87;		/* Valid CRC for CMD8(0x1AA) */
+	else n = 0x01;						/* Dummy CRC + Stop */
 	xmit_spi(n);
 
 	/* Receive a command response */
@@ -96,38 +96,21 @@ BYTE send_cmd (
 
 DSTATUS disk_initialize (void)
 {
-	BYTE n, cmd, ty;
+	BYTE n;
 
 	init_spi();		/* Initialize ports to control MMC */
 	DESELECT();
 	for (n = 10; n; n--) xmit_spi(0xFF);	/* 80 dummy clocks with CS=H */
 
-	ty = 0;
-	if (send_cmd(CMD0, 0) == 1) {			/* GO_IDLE_STATE */
-		if (send_cmd(CMD8, 0x1AA) == 1) {	/* SDv2, assume valid vdd range */
-			for (n = 0; n < 4; n++) xmit_spi(0xFF);	/* Get trailing return value of R7 resp */
-			while (send_cmd(ACMD41, 1UL << 30)) _delay_us(100);
-			if (send_cmd(CMD58, 0) == 0) { /* Check CCS bit in the OCR */
-				ty = CT_SD2;
-				if (xmit_spi(0xFF) & 0x40) ty |= CT_BLOCK; /* SDv2 (HC or SC) */
-				for (n = 0; n < 3; n++) xmit_spi(0xFF);
-			}
-		} else {							/* SDv1 or MMCv3 */
-			if (send_cmd(ACMD41, 0) <= 1) 	{
-				ty = CT_SD1; cmd = ACMD41;	/* SDv1 */
-			} else {
-				ty = CT_MMC; cmd = CMD1;	/* MMCv3 */
-			}
-			while (send_cmd(cmd, 0)) _delay_us(100); /* Wait for leaving idle state */
-			if (send_cmd(CMD16, 512) != 0)           /* Set R/W block length to 512 */
-				ty = 0;
-		}
-	}
-//	CardType = ty;
+	if (send_cmd(CMD0, 0) != 1) return STA_NOINIT;	/* Enter Idle state */
+	if (send_cmd(CMD8, 0x1AA) != 1) return STA_NOINIT; /* Force SDv2 */
+	for (n = 0; n < 4; n++) xmit_spi(0xFF);  /* Get trailing return value of R7 resp */
+	while (send_cmd(ACMD41, 1UL << 30)) _delay_us(100);	/* Wait for leaving idle state (ACMD41 with HCS bit) */
+
 	DESELECT();
 	xmit_spi(0xFF);
 
-	return ty ? 0 : STA_NOINIT;
+	return 0;
 }
 
 
@@ -155,13 +138,7 @@ DRESULT disk_read (
 			rc = xmit_spi(0xFF);
 		}
 
-		/* A data packet arrived */
-//		if (rc == 0xFE) {	
-			/* Skip leading bytes */
-//			while (offset--) xmit_spi(0xFF); Leading bytes always 0
-
-			/* Receive a part of the sector */
-			/* Store data to the memory */
+		/* Store data to the memory */
 		do {
 			*buff++ = xmit_spi(0xFF);
 		} while (--count);

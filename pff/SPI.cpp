@@ -14,6 +14,6 @@ void __attribute__((noinline)) init_spi(void) {
 	DDRB  |= 1 << 3;  // MOSI output mode
 	DDRB  |= 1 << 5;  // SCK output mode
 	SD_CS_DDR |= SD_CS_MASK;
-    SPCR = (1 << SPE) | (1 << MSTR);
-    SPSR = 1 << SPI2X;
+	SPCR = (1 << SPE) | (1 << MSTR);
+	SPSR = 1 << SPI2X;
 }

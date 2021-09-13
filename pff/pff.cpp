@@ -850,7 +850,6 @@ FRESULT pf_open (
 	if (!dir[0] || (dir[DIR_Attr] & AM_DIR))	/* It is a directory */
 		return FR_NO_FILE;
 
-	fs->org_clust = get_clust(fs, dir);		/* File start cluster */
 	tmp = LD_DWORD(dir+DIR_FileSize);
 #if _USE_SIZE32 == 0
 	if (tmp > 65535) {
@@ -859,6 +858,9 @@ FRESULT pf_open (
 #endif
 #if _USE_BYTE == 0
 	tmp = tmp >> 9;
+	fs->curr_clust = get_clust(fs, dir);		/* File start cluster */
+#else
+	fs->curr_clust = get_clust(fs, dir);		/* File start cluster */
 #endif
 	fs->fsize = tmp;	/* File size */
 	fs->fptr = 0;						/* File pointer */
@@ -941,17 +943,6 @@ FRESULT pf_read (FATFS* fs, BYTE** data, BYTE* done) {
 	if (!(fs->flag & FA_OPENED))		/* Check if opened */
 		return FR_NOT_OPENED;
 
-	cs = (BYTE)(fs->fptr & ((1 << fs->csize) - 1));
-	
-	if (!cs) {								/* On the cluster boundary? */
-		if (fs->fptr == 0)					/* On the top of the file? */
-			clst = fs->org_clust;
-		else
-			clst = get_fat(fs, fs->curr_clust);
-		if (clst <= 1) ABORT(FR_DISK_ERR);
-		fs->curr_clust = clst;				/* Update current cluster */
-	}
-
 	fsect = clust2sect(fs, fs->curr_clust);		/* Get current sector */
 	if (!fsect) ABORT(FR_DISK_ERR);
 	fs->dsect = fsect + cs;
@@ -959,6 +950,14 @@ FRESULT pf_read (FATFS* fs, BYTE** data, BYTE* done) {
 	dr = disk_read(sect, fs->dsect);
 	if (dr) ABORT(FR_DISK_ERR);
 	fs->fptr++;
+
+	cs = (BYTE)(fs->fptr & ((1 << fs->csize) - 1));
+	
+	if (!cs) {					/* On the cluster boundary? */
+		clst = get_fat(fs, fs->curr_clust);
+		if (clst <= 1) ABORT(FR_DISK_ERR);
+		fs->curr_clust =  clst; /* Update current cluster */
+	}
 
 	*data = sect;
 	*done = (fs->fptr == fs->fsize);
