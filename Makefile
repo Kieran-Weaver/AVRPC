@@ -12,10 +12,11 @@ LDFLAGS = -Wl,-Map,$(TARGET).map -Wl,--gc-sections -Wl,--section-start,.text=$(B
 
 INC_FLAGS := -I .
 CPPFLAGS = $(INC_FLAGS) -MT $@ -MMD -MP -MF build/$*.d
-CFLAGS   = -Wall -Os -g -mmcu=$(MCU) -DF_CPU=$(F_CPU) $(INC_FLAGS) -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -mrelax -flto -DBOOT_ADDR=$(BOOT_ADDR)
-CXXFLAGS = -Wall -Os -g -mmcu=$(MCU) -DF_CPU=$(F_CPU) -std=c++17   -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -mrelax -flto -DBOOT_ADDR=$(BOOT_ADDR)
+CFLAGS   = -Wall -Os -mmcu=$(MCU) -DF_CPU=$(F_CPU) $(INC_FLAGS) -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -mrelax -flto -DBOOT_ADDR=$(BOOT_ADDR)
+CXXFLAGS = -Wall -Os -mmcu=$(MCU) -DF_CPU=$(F_CPU) -std=c++17   -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -mrelax -flto -DBOOT_ADDR=$(BOOT_ADDR)
 
 SRCS=avrboot.cpp $(shell find pff -path "*.cpp") $(shell find . -path "*.S")
+#SRCS=SDTest.cpp $(shell find pff -path "*.cpp") $(shell find . -path "*.S")
 OBJS=$(patsubst %.S, ./build/%.o, $(patsubst %.cpp, ./build/%.o, $(SRCS)))
 DEPS := $(OBJS:.o=.d)
 

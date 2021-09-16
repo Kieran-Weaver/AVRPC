@@ -24,6 +24,7 @@ extern "C" {
 #include "integer.h"
 #include "pffconf.h"
 #include "diskio.h"
+#include <avr/pgmspace.h>
 
 #if _PFATFS != _PFFCONF
 #error Wrong configuration file (pffconf.h).
@@ -69,7 +70,7 @@ typedef struct {
 
 typedef struct {
 	WORD	index;		/* Current read/write index number */
-	const BYTE* fn;			/* Pointer to the SFN (in/out) {file[8],ext[3],status[1]} */
+	const BYTE* fn PROGMEM;			/* Pointer to the SFN (in/out) {file[8],ext[3],status[1]} */
 	CLUST	sclust;		/* Table start cluster (0:Static table) */
 	CLUST	clust;		/* Current cluster */
 	DWORD	sect;		/* Current sector */
@@ -107,7 +108,7 @@ typedef enum {
 /* Petit FatFs module application interface                     */
 
 FRESULT pf_mount (FATFS* fs);								/* Mount/Unmount a logical drive */
-FRESULT pf_open (FATFS* fs, const char* path);							/* Open a file */
+FRESULT pf_open (FATFS* fs, const char* path PROGMEM);							/* Open a file */
 #if _USE_BYTE
 FRESULT pf_read (FATFS* fs, void* buff, UINT btr, UINT* br);			/* Read data from the open file */
 #else

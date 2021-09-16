@@ -7,7 +7,8 @@
 #include <stddef.h>
 #include <string.h>
 #include <avr/io.h>
-
+#include <avr/pgmspace.h>
+const char fname[] PROGMEM = "STUFF   TXT";
 const uint16_t MIN_2X_BAUD = F_CPU/(4*(2*0XFFF + 1)) + 1;
 FATFS fs;     /* File system object */
 //------------------------------------------------------------------------------
@@ -77,7 +78,7 @@ void test() {
 	if (fp) errorHalt("pf_mount");
   
 	// Open test file.
-	if (pf_open(&fs, "STUFF   TXT")) errorHalt("pf_open");
+	if (pf_open(&fs, fname)) errorHalt("pf_open");
   
 	// Dump test file to Serial.
 	while (1) {

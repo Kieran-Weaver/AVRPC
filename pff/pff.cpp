@@ -492,7 +492,7 @@ FRESULT dir_next (	/* FR_OK:Succeeded, FR_NO_FILE:End of table */
 /*-----------------------------------------------------------------------*/
 
 static
-FRESULT dir_find (
+BYTE* dir_find (
 	FATFS* fs,
 	DIR *dj		/* Pointer to the directory object linked to the file name */
 )
@@ -503,12 +503,12 @@ FRESULT dir_find (
 
 
 	res = dir_rewind(fs, dj);			/* Rewind directory object */
-	if (res != FR_OK) return res;
+	if (res != FR_OK) return NULL;
 
-	dir = sect + (dj->index % 16) * 32;
 
 	do {
 		if ((res = (disk_read(sect, dj->sect) ? FR_DISK_ERR : FR_OK))) break; /* Read an entry */
+		dir = sect + (dj->index % 16) * 32;
 		c = dir[DIR_Name];	/* First character */
 		if (c == 0) { res = FR_NO_FILE; break; }	/* Reached to end of table */
 		if (!(dir[DIR_Attr] & AM_VOL) && !memcmp_P(dir, dj->fn, 11)) /* Is it a valid entry? */
@@ -516,7 +516,7 @@ FRESULT dir_find (
 		res = dir_next(fs, dj);					/* Next entry */
 	} while (res == FR_OK);
 
-	return res;
+	return dir;
 }
 
 
@@ -661,15 +661,13 @@ void get_fileinfo (		/* No return code */
 /*-----------------------------------------------------------------------*/
 
 static
-FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
+BYTE* follow_path (	/* FR_OK(0): successful, !=0: error code */
 	FATFS* fs,
 	DIR *dj,			/* Directory object to return last directory and found object */
 	BYTE *dir,			/* 32-byte working buffer */
 	const char *path	/* Full-path string to find a file or directory */
 )
 {
-	FRESULT res;
-
 	dj->sclust = 0;						/* Set start directory (always root dir) */
 
 #if _USE_PATH
@@ -678,7 +676,7 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 	if (*path == '/') path++;			/* Strip heading separator if exist */
 
 	if ((BYTE)*path < ' ') {			/* Null path means the root directory */
-		res = dir_rewind(fs, dj);
+		dir_rewind(fs, dj);
 		dir[0] = 0;
 
 	} else {							/* Follow path */
@@ -697,11 +695,11 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 
 #else
 	dj->fn = (const BYTE*) path;	
-	res = dir_find(fs, dj);
+	dir = dir_find(fs, dj);
 
 #endif
 
-	return res;
+	return dir;
 }
 
 /*-----------------------------------------------------------------------*/
@@ -832,22 +830,19 @@ FRESULT pf_mount (
 
 FRESULT pf_open (
 	FATFS* fs,
-	const char *path	/* Pointer to the file name */
+	const char *path PROGMEM	/* Pointer to the file name */
 )
 {
-	FRESULT res;
 	DIR dj;
 	DWORD tmp;
-	BYTE sp[12], dir[32];
+	BYTE sp[12], *dir;
 
 	if (!fs) return FR_NOT_ENABLED;		/* Check file system */
 
 	fs->flag = 0;
 	dj.fn = sp;
-	res = follow_path(fs, &dj, dir, path);	/* Follow the file path */
-	if (res != FR_OK) return res;		/* Follow failed */
-	if (!dir[0] || (dir[DIR_Attr] & AM_DIR))	/* It is a directory */
-		return FR_NO_FILE;
+	dir = follow_path(fs, &dj, dir, path);	/* Follow the file path */
+	if (dir == NULL) return FR_NO_FILE;		/* Follow failed */
 
 	tmp = LD_DWORD(dir+DIR_FileSize);
 #if _USE_SIZE32 == 0
