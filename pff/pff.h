@@ -69,7 +69,7 @@ typedef struct {
 
 typedef struct {
 	WORD	index;		/* Current read/write index number */
-	BYTE*	fn;			/* Pointer to the SFN (in/out) {file[8],ext[3],status[1]} */
+	const BYTE* fn;			/* Pointer to the SFN (in/out) {file[8],ext[3],status[1]} */
 	CLUST	sclust;		/* Table start cluster (0:Static table) */
 	CLUST	clust;		/* Current cluster */
 	DWORD	sect;		/* Current sector */

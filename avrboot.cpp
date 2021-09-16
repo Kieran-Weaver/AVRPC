@@ -36,7 +36,8 @@
 /
 /-------------------------------------------------------------------------*/
 
-const char filename[13] ="FIRMWAREBIN\0"; 	// EDIT FILENAME HERE
+#include <avr/pgmspace.h>
+const char filename[13] PROGMEM = "FIRMWAREBIN\0"; 	// EDIT FILENAME HERE
 #include <avr/wdt.h> //Watchdog
 // The following code is recommended in http://avr-libc.nongnu.org/user-manual/group__avr__watchdog.html but is disabled for now because avr_boot doesn't currently do anything with mcusr_mirror so for now we will only reset MCUSR and disable WDT.
 //uint8_t mcusr_mirror __attribute__ ((section (".noinit")));void get_mcusr(void) __attribute__((naked)) __attribute__((section(".init3")));void get_mcusr(void){mcusr_mirror = MCUSR;MCUSR = 0;wdt_disable();}
@@ -84,10 +85,6 @@ void flash_write (DWORD, const BYTE*);	/* Program a flash page (asmfunc.S) */
 
 };
 
-FATFS Fatfs;					// Petit-FatFs work area 
-BYTE Buff[SPM_PAGESIZE];	        	// Page data buffer
-
-
 
 static uint8_t pagecmp(const DWORD fa, uint8_t buff[SPM_PAGESIZE])
 {
@@ -112,7 +109,7 @@ static uint8_t pagecmp(const DWORD fa, uint8_t buff[SPM_PAGESIZE])
 	return 0;
 }
 
-void doFlash() {
+void doFlash(FATFS* fs) {
 	DWORD fa;	 /* Flash address */
 	BYTE* tbuf; /* Temporary buffer */
 	BYTE done;
@@ -124,18 +121,15 @@ void doFlash() {
 
 	for (fa = 0; fa < BOOT_ADDR; fa += SPM_PAGESIZE) {	/* Update all application pages */
 
-		if ((fa & 0x1FF) == 0) pf_read(&Fatfs, &tbuf, &done);
-
-		memcpy(Buff, tbuf, SPM_PAGESIZE); /* Load a page data */
-		tbuf += SPM_PAGESIZE;
-							
-		if (pagecmp(fa, Buff)) {		/* Only flash if page is changed */
+		if ((fa & 0x1FF) == 0) pf_read(fs, &tbuf, &done);
+					
+		if (pagecmp(fa, tbuf)) {		/* Only flash if page is changed */
 			#if USE_LED
 			  led_write_off();
 			  led_power_on();
 			#endif
 			flash_erase(fa);		/* Erase a page */
-			flash_write(fa, Buff);		/* Write it if the data is available */	
+			flash_write(fa, tbuf);		/* Write it if the data is available */	
 			
 		} else {
 
@@ -144,13 +138,15 @@ void doFlash() {
 		  led_write_on();
 		#endif
 		}
+
+		tbuf += SPM_PAGESIZE;
 	}
 }
 
-void checkFile() {
+void checkFile(FATFS* fs) {
 	uint8_t fresult;
 
-	fresult = pf_mount(&Fatfs);	/* Initialize file system */
+	fresult = pf_mount(fs);	/* Initialize file system */
 
 	if (fresult != FR_OK) { /* File System could not be mounted */
 	  #if USE_UART
@@ -196,7 +192,7 @@ void checkFile() {
 	
 	if (found == 0) {*/
 
-	fresult = pf_open(&Fatfs, filename);
+	fresult = pf_open(fs, filename);
 
 	if (fresult != FR_OK) { /* File could not be opened */
 		
@@ -213,7 +209,7 @@ void checkFile() {
 	  return;
 	}
 
-	doFlash();
+	doFlash(fs);
 
 	#if USE_LED
 	  led_write_off();
@@ -227,6 +223,7 @@ void checkFile() {
 
 int main (void)
 {
+	FATFS Fatfs;					// Petit-FatFs work area 
 	#if USE_LED
 	  init_leds();
 	  uint8_t i=0;
@@ -243,7 +240,7 @@ int main (void)
 		  led_write_on();_delay_ms(200);led_write_off();  //Test Write Led
 		#endif
 
-		checkFile();
+		checkFile(&Fatfs);
 
 		if (pgm_read_word(0) != 0xFFFF) ((void(*)(void))0)();	  //EXIT BOOTLOADER
     

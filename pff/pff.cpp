@@ -29,7 +29,7 @@
 #include "pff.h"		/* Petit FatFs configurations and declarations */
 #include "diskio.h"		/* Declarations of low level disk I/O functions */
 #include <string.h>
-
+#include <avr/pgmspace.h>
 
 /*--------------------------------------------------------------------------
 
@@ -330,7 +330,7 @@ CLUST get_fat (	/* 1:IO error, Else:Cluster status */
 	CLUST clst	/* Cluster# to get the link information */
 )
 {
-	BYTE buf[4];
+	BYTE *buf;
 
 #if _USE_RANGE
 	if (clst < 2 || clst >= fs->n_fatent)	/* Range check */
@@ -366,7 +366,7 @@ CLUST get_fat (	/* 1:IO error, Else:Cluster status */
 #if _FS_FAT32
 	case FS_FAT32 :
 		if (disk_read(sect, fs->fatbase + clst / 128)) break;
-		memcpy(buf, sect + ((UINT)clst % 128) * 4, 4);
+		buf = sect + ((UINT)clst % 128) * 4;
 		return LD_DWORD(buf) & 0x0FFFFFFF;
 #endif
 	}
@@ -494,23 +494,24 @@ FRESULT dir_next (	/* FR_OK:Succeeded, FR_NO_FILE:End of table */
 static
 FRESULT dir_find (
 	FATFS* fs,
-	DIR *dj,		/* Pointer to the directory object linked to the file name */
-	BYTE *dir		/* 32-byte working buffer */
+	DIR *dj		/* Pointer to the directory object linked to the file name */
 )
 {
 	FRESULT res;
 	BYTE c;
+	BYTE* dir;
 
 
 	res = dir_rewind(fs, dj);			/* Rewind directory object */
 	if (res != FR_OK) return res;
 
+	dir = sect + (dj->index % 16) * 32;
+
 	do {
 		if ((res = (disk_read(sect, dj->sect) ? FR_DISK_ERR : FR_OK))) break; /* Read an entry */
-		memcpy(dir, sect + (dj->index % 16) * 32, 32);
 		c = dir[DIR_Name];	/* First character */
 		if (c == 0) { res = FR_NO_FILE; break; }	/* Reached to end of table */
-		if (!(dir[DIR_Attr] & AM_VOL) && !memcmp(dir, dj->fn, 11)) /* Is it a valid entry? */
+		if (!(dir[DIR_Attr] & AM_VOL) && !memcmp_P(dir, dj->fn, 11)) /* Is it a valid entry? */
 			break;
 		res = dir_next(fs, dj);					/* Next entry */
 	} while (res == FR_OK);
@@ -684,7 +685,7 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 		for (;;) {
 			res = create_name(dj, &path);	/* Get a segment */
 			if (res != FR_OK) break;
-			res = dir_find(fs, dj, dir);		/* Find it */
+			res = dir_find(fs, dj);		/* Find it */
 			if (res != FR_OK) break;		/* Could not find the object */
 			if (dj->fn[11]) break;			/* Last segment match. Function completed. */
 			if (!(dir[DIR_Attr] & AM_DIR)) { /* Cannot follow path because it is a file */
@@ -695,9 +696,8 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 	}
 
 #else
-	
-	memcpy(dj->fn, path, 11);
-	res = dir_find(fs, dj, dir);
+	dj->fn = (const BYTE*) path;	
+	res = dir_find(fs, dj);
 
 #endif
 
@@ -710,7 +710,6 @@ FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 
 static
 BYTE check_fs (	/* 0:The FAT boot record, 1:Valid boot record but not an FAT, 2:Not a boot record, 3:Error */
-	BYTE *buf,	/* Working buffer */
 	DWORD fsect	/* Sector# (lba) to check if it is an FAT boot record or not */
 )
 {
@@ -758,7 +757,7 @@ FRESULT pf_mount (
 
 	/* Search FAT partition on the drive */
 	bsect = 0;
-	fmt = check_fs(buf, bsect);			/* Check sector 0 as an SFD format */
+	fmt = check_fs(bsect);			/* Check sector 0 as an SFD format */
 	if (fmt == 1) {						/* Not an FAT boot record, it may be FDISK format */
 		/* Check a partition listed in top of the partition table */
 		if (disk_read(sect, bsect)) { /* 1st partition entry */
@@ -767,7 +766,7 @@ FRESULT pf_mount (
 			memcpy(buf, sect + MBR_Table, 16);
 			if (buf[4]) {					/* Is the partition existing? */
 				bsect = LD_DWORD(&buf[8]);	/* Partition offset in LBA */
-				fmt = check_fs(buf, bsect);	/* Check the partition */
+				fmt = check_fs(bsect);	/* Check the partition */
 			}
 		}
 	}
