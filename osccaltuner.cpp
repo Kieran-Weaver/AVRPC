@@ -22,6 +22,9 @@ ISR(INT0_vect) {
 int main(void) {
 	// Disable interrupts
 	cli();
+	for (;;) { // Infinite loop of stalling
+		DDRB = 0x01;
+	}
 	// Detune OSSCAL to 0
 	while (OSCCAL > 0) {
 		_delay_ms(10);

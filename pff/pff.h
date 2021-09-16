@@ -43,6 +43,7 @@ typedef struct {
 	BYTE	fs_type;	/* FAT sub type */
 	BYTE	flag;		/* File status flags */
 	BYTE	csize;		/* Log2 of number of sectors per cluster */
+	BYTE 	csize2;     /* number of sectors per cluster */
 	BYTE	pad1;
 	WORD	n_rootdir;	/* Number of root directory entries (0 on FAT32) */
 	CLUST	n_fatent;	/* Number of FAT entries (= number of clusters + 2) */

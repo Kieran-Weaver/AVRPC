@@ -109,7 +109,7 @@ static uint8_t pagecmp(const DWORD fa, uint8_t buff[SPM_PAGESIZE])
 	return 0;
 }
 
-void doFlash(FATFS* fs) {
+bool doFlash(FATFS* fs) {
 	DWORD fa;	 /* Flash address */
 	BYTE* tbuf; /* Temporary buffer */
 	BYTE done;
@@ -141,9 +141,11 @@ void doFlash(FATFS* fs) {
 
 		tbuf += SPM_PAGESIZE;
 	}
+	
+	return true;
 }
 
-void checkFile(FATFS* fs) {
+bool checkFile(FATFS* fs) {
 	uint8_t fresult;
 
 	fresult = pf_mount(fs);	/* Initialize file system */
@@ -160,7 +162,7 @@ void checkFile(FATFS* fs) {
 	    for(i=0;i<2*fresult;i++) { led_power_toggle();_delay_ms(500);}//Give error number while Write led is on
 	    led_write_off();
 	  #endif
-	  return;
+	  return false;
 	}
 /*
 	
@@ -206,10 +208,10 @@ void checkFile(FATFS* fs) {
 	    for(i=0;i<2*fresult;i++) { led_write_toggle();_delay_ms(500);}//Give error number while Power led is on
 	    led_power_off();
 	  #endif
-	  return;
+	  return false;
 	}
 
-	doFlash(fs);
+	return doFlash(fs);
 
 	#if USE_LED
 	  led_write_off();
@@ -240,9 +242,7 @@ int main (void)
 		  led_write_on();_delay_ms(200);led_write_off();  //Test Write Led
 		#endif
 
-		checkFile(&Fatfs);
-
-		if (pgm_read_word(0) != 0xFFFF) ((void(*)(void))0)();	  //EXIT BOOTLOADER
+		if (checkFile(&Fatfs)) ((void(*)(void))0)();	  //EXIT BOOTLOADER
     
 		#if USE_UART
 			UART_puts(PSTR("retry"));

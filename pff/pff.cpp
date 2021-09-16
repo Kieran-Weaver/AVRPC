@@ -391,7 +391,7 @@ DWORD clust2sect (	/* !=0: Sector number, 0: Failed - invalid cluster# */
 #if _USE_RANGE
 	if (clst >= (fs->n_fatent - 2)) return 0;		/* Invalid cluster# */
 #endif
-	return ((DWORD)clst << fs->csize) + fs->database;
+	return (((DWORD)clst) << ((DWORD)fs->csize)) + fs->database;
 }
 
 
@@ -463,11 +463,13 @@ FRESULT dir_next (	/* FR_OK:Succeeded, FR_NO_FILE:End of table */
 	if (!(i % 16)) {		/* Sector changed? */
 		dj->sect++;			/* Next sector */
 
+#if _FS_32ONLY == 0
 		if (dj->clust == 0) {	/* Static table */
 			if (i >= fs->n_rootdir)	/* Report EOT when end of table */
 				return FR_NO_FILE;
 		}
 		else {					/* Dynamic table */
+#endif
 			if (((i / 16) & ((1 << fs->csize) - 1)) == 0) {	/* Cluster changed? */
 				clst = get_fat(fs, dj->clust);		/* Get next cluster */
 				if (clst <= 1) return FR_DISK_ERR;
@@ -476,7 +478,9 @@ FRESULT dir_next (	/* FR_OK:Succeeded, FR_NO_FILE:End of table */
 				dj->clust = clst;				/* Initialize data for new cluster */
 				dj->sect = clust2sect(fs, clst);
 			}
+#if _FS_32ONLY == 0
 		}
+#endif
 	}
 
 	dj->index = i;
@@ -787,7 +791,8 @@ FRESULT pf_mount (
 	}
 
 	fs->fatbase = bsect + LD_WORD(buf+BPB_RsvdSecCnt-13); /* FAT start sector (lba) */
-	fs->csize = ffs(buf[BPB_SecPerClus-13]) - 1;	/* Number of sectors per cluster */
+	fs->csize2 = buf[BPB_SecPerClus-13];
+	fs->csize = ffs(fs->csize2) - 1;	/* Number of sectors per cluster */
 	fs->n_rootdir = LD_WORD(buf+BPB_RootEntCnt-13);		/* Nmuber of root directory entries */
 #if _FS_32ONLY
 	tsect = LD_DWORD(buf+BPB_TotSec32-13); /* Number of sectors on the file system */
@@ -939,19 +944,21 @@ FRESULT pf_read (FATFS* fs, BYTE** data, BYTE* done) {
 
 	fsect = clust2sect(fs, fs->curr_clust);		/* Get current sector */
 	if (!fsect) ABORT(FR_DISK_ERR);
+	cs = (BYTE)(fs->fptr & (fs->csize2 - 1));
+	if (!cs) {					/* On the cluster boundary? */
+		if (fs->fptr) {
+			clst = get_fat(fs, fs->curr_clust);
+			if (clst <= 1) ABORT(FR_DISK_ERR);
+			fs->curr_clust =  clst; /* Update current cluster */
+		}
+	}
+
 	fs->dsect = fsect + cs;
 
 	dr = disk_read(sect, fs->dsect);
 	if (dr) ABORT(FR_DISK_ERR);
 	fs->fptr++;
-
-	cs = (BYTE)(fs->fptr & ((1 << fs->csize) - 1));
 	
-	if (!cs) {					/* On the cluster boundary? */
-		clst = get_fat(fs, fs->curr_clust);
-		if (clst <= 1) ABORT(FR_DISK_ERR);
-		fs->curr_clust =  clst; /* Update current cluster */
-	}
 
 	*data = sect;
 	*done = (fs->fptr == fs->fsize);
