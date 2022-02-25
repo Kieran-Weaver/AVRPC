@@ -8,10 +8,10 @@ OBJS := $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(SRCS)))
 
 ifdef OS
 	LDFLAGS=-Wl,-O1 -static-libstdc++ -static-libgcc -static -lz
-	GL_FLAGS=-lopengl32 -lglfw3 -mwindows
+	GL_FLAGS=-lglbinding -lopengl32 -lglfw3 -mwindows
 else
 	LDFLAGS=-lz -Wl,-O1
-	GL_FLAGS=-lGL -lglfw
+	GL_FLAGS=-lglbinding -lGL -lglfw
 endif
 
 .PHONY: all clean

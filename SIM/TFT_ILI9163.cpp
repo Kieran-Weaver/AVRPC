@@ -1,4 +1,5 @@
 #include "TFT_ILI9163.h"
+#include <cstddef>
 
 TFT_ILI9163::TFT_ILI9163(){
 	this->setSize(128, 160);

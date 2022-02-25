@@ -1,9 +1,14 @@
-#include "gl.h"
+#include <glbinding/gl/gl.h>
+#include <glbinding/glbinding.h>
 #include "AVRPC_SIM.h"
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <cstdlib>
 #include <string>
 #include <fstream>
+
+using namespace gl;
+
 std::string readWholeFile(const std::string& filename){
 	std::ifstream infile(filename,std::ios::in | std::ios::binary | std::ios::ate);
 	std::string contents;
@@ -36,6 +41,8 @@ AVRPC::AVRPC(){
 	}
 	glfwMakeContextCurrent(this->window);
 	glfwSwapInterval(1);
+	
+	glbinding::initialize(glfwGetProcAddress);
 	glGenVertexArrays(1, &(this->VAO));
 	glBindVertexArray(this->VAO);
 
