@@ -1,13 +1,13 @@
 #ifndef AVRPC_SIM_HPP
 #define AVRPC_SIM_HPP
-#include "TFT_ILI9163.h"
 #include <cstdint>
+#include <vector>
 struct GLFWwindow;
 class AVRPC{
 public:
 	AVRPC();
 	~AVRPC();
-	void Draw(TFT_ILI9163& sim);
+	void Draw(const std::vector<uint32_t>& pixels, uint16_t w, uint16_t h);
 	operator bool();
 private:
 	uint32_t texID;

@@ -5,12 +5,12 @@ int main(int argc, char **argv){
 	AVRPC avrpc;
 	TFT_ILI9163 tft;
 	tft.fillScreen(0xFFFF);
-	tft.refresh();
 	int i = 0;
+	uint16_t w, h;
 	while (avrpc){
 		tft.fillScreen(i);
-		tft.refresh();
-		avrpc.Draw(tft);
+		tft.getDims(w, h);
+		avrpc.Draw(tft.getPixels(), w, h);
 		i++;
 		if ((i & 255) == 0) {
 			tft.writeCommand(TFT_INVOFF);

@@ -48,11 +48,22 @@ enum ILI9163_COMMANDS {
 	TFT_GAMRSEL = 0xF2  // GAM_R_SEL
 };
 
+enum ILI9163_BPP {
+	TFT_RGB444 = 12,
+	TFT_RGB565 = 16,
+	TFT_RGB666 = 18
+};
+
+struct TFT_State {
+	bool inverted = false;
+	bool sleep = true;
+	bool idle = false;
+};
+
 class TFT_ILI9163{
 	public:
 // Universal high-level API
 		TFT_ILI9163();
-		void begin();
 		void setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
 		void pushColor(uint16_t color);
 // Universal low-level API
@@ -67,28 +78,26 @@ class TFT_ILI9163{
 		void fillScreen(uint16_t color);
 // Simulator functions
 		void setSize(uint16_t w, uint16_t h);			// Set the size of the display
-		void refresh();									// End the last frame and start a new one
 		uint64_t getCycles() const;						// Get cycles spent drawing during last frame
-		const std::vector<uint16_t>& getPixels() const;	// Get pixels written to display during last frame
+		const std::vector<uint32_t>& getPixels() const;	// Get pixels written to display during last frame
+		const TFT_State getState() const;               // Get rendering state
 		void getDims(uint16_t& w, uint16_t& h) const;	// Get dimensions of screen
 	private:
-// Simulator parameters
-		uint8_t data_cycles = 18;			// Cycles required to write 1 byte of data
+		int writeRGB(uint32_t* pixels, const uint8_t* buf);
 // Data for current frame
-		uint64_t cycle_count = 0;			// Cycles spent drawing: Only accurate for AVR8
-		std::array<uint16_t, 4> addrWindow = {};	// Current rectangle where pixels are written to
-		std::vector<uint16_t> pixelData; 	// Color(X, Y) = pixelData[Y*W + X]
+		std::array<uint16_t, 4> addrWindow = {}; // Current rectangle where pixels are written to
+		std::array<uint8_t, 3> pixelBuf = {};    // SPI Buffer for pixels
+		int8_t pixelIdx = 0;
+		std::vector<uint32_t> pixelData; 	     // Color(X, Y) = pixelData[Y*W + X]
 		uint16_t x = 0;
 		uint16_t y = 0;
 		uint16_t w = 0;
 		uint16_t h = 0;
 		ILI9163_COMMANDS command; // Current command
-		uint8_t cmdnum; // Current command number
+		ILI9163_BPP bpp = TFT_RGB565; // Current bpp
+		uint16_t cmdnum;          // Current data byte of command
 		bool inverted = false;
-// Data for old frame
-		uint64_t last_count = 0;
-		std::vector<uint16_t> oldPixels;
-		uint16_t oldw = 0;
-		uint16_t oldh = 0;
+		bool sleep = true;
+		bool idle = false;
 };
 #endif

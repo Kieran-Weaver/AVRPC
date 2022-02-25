@@ -80,12 +80,12 @@ AVRPC::AVRPC(){
 	glUniform1i(glGetUniformLocation(this->PROG, "Texture"), 0);
 }
 
-void AVRPC::Draw(TFT_ILI9163& sim){
-	const std::vector<uint16_t>& pixels = sim.getPixels();
-	sim.getDims(this->w, this->h);
+void AVRPC::Draw(const std::vector<uint32_t>& pixels, uint16_t w, uint16_t h) {
+	this->w = w;
+	this->h = h;
 	glUseProgram(this->PROG);
 	glBindTexture(GL_TEXTURE_2D, this->texID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->w, this->h, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels.data());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->w, this->h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, pixels.data());
 	glBindVertexArray(this->VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
