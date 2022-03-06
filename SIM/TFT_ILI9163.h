@@ -55,9 +55,15 @@ enum ILI9163_BPP {
 };
 
 struct TFT_State {
-	bool inverted = false;
-	bool sleep = true;
-	bool idle = false;
+	// TFA + VSA + BFA must equal 1
+	float TFA; // Top fixed area
+	float VSA; // Vertical scroll area
+	float BFA; // Bottom fixed area
+	// SSA describes first line in VSA
+	float SSA; // Scroll start address
+	float inverted;
+	bool sleep;
+	bool idle;
 };
 
 class TFT_ILI9163{
@@ -78,7 +84,6 @@ class TFT_ILI9163{
 		void fillScreen(uint16_t color);
 // Simulator functions
 		void setSize(uint16_t w, uint16_t h);			// Set the size of the display
-		uint64_t getCycles() const;						// Get cycles spent drawing during last frame
 		const std::vector<uint32_t>& getPixels() const;	// Get pixels written to display during last frame
 		const TFT_State getState() const;               // Get rendering state
 		void getDims(uint16_t& w, uint16_t& h) const;	// Get dimensions of screen
@@ -96,6 +101,11 @@ class TFT_ILI9163{
 		ILI9163_COMMANDS command; // Current command
 		ILI9163_BPP bpp = TFT_RGB565; // Current bpp
 		uint16_t cmdnum;          // Current data byte of command
+// Rendering state
+		uint16_t TFA; // Top fixed area
+		uint16_t VSA; // Vertical scroll area
+		uint16_t BFA; // Bottom fixed area
+		uint16_t SSA; // Scroll start address
 		bool inverted = false;
 		bool sleep = true;
 		bool idle = false;

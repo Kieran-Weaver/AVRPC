@@ -8,8 +8,9 @@ int main(int argc, char **argv){
 	int i = 0;
 	uint16_t w, h;
 	while (avrpc){
-		tft.fillScreen(i);
 		tft.getDims(w, h);
+		tft.fillRect(0, 0, w, h/2, i);
+		tft.fillRect(0, h/2, w, h/2, 0xFFFF-i);
 		avrpc.Draw(tft.getPixels(), w, h);
 		i++;
 		if ((i & 255) == 0) {
