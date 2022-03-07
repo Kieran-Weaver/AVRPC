@@ -50,38 +50,49 @@ void TFT_ILI9163::writeCommand(ILI9163_COMMANDS command){
 	}
 }
 
+static uint16_t replace(uint16_t data, uint8_t byte, uint16_t cmdnum) {
+	constexpr std::array<uint16_t, 2> masks = { 0x00FF, 0xFF00 };
+	constexpr std::array<uint16_t, 2> shifts = { 8, 0 };
+
+	data &= masks[cmdnum % 2];
+	data |= byte << shifts[cmdnum % 2];
+	
+	return data;
+}
+
 void TFT_ILI9163::writeData(uint8_t data){
-	const std::array<uint16_t, 2> masks = { 0x00FF, 0xFF00 };
-	const std::array<uint16_t, 2> shifts = { 8, 0 };
 
 	switch (this->command) {
 	// case TFT_COLSET unsupported
 	case TFT_VSCRL: // Vertical Scroll
+		if (cmdnum <= 1) state.TFA = replace(state.TFA, data, cmdnum);
+		else if (cmdnum <= 3) state.VSA = replace(state.VSA, data, cmdnum);
+		else if (cmdnum <= 5) state.BFA = replace(state.BFA, data, cmdnum);
 		break;
 	case TFT_MACTL: // Memory Access Control
 		break;
 	case TFT_VSSA: // Vertical Scroll Start Address
+		state.SSA = replace(state.SSA, data, cmdnum);
 		break;
 	case TFT_IPA: // Interface Pixel Format
-		break;
-	case TFT_INVCTL: // Display Inversion Control
+		bpp = static_cast<ILI9163_BPP>(data & 7);
 		break;
 	// Invert X and Y direction
-	case TFT_SDDC: // Source driver direction control
+	case TFT_SDDC: // Source driver direction control (X / 128)
+		state.xflip = static_cast<bool>(data);
 		break;
-	case TFT_GDDC: // Gate driver direction control
+	case TFT_GDDC: // Gate driver direction control (Y / 160)
+		state.yflip = static_cast<bool>(data);
 		break;
-	case TFT_CASET:
-		addrWindow[cmdnum / 2] &= masks[cmdnum % 2];
-		addrWindow[cmdnum / 2] |= data << shifts[cmdnum % 2];
+	case TFT_CASET: // Set column address
+		addrWindow[cmdnum / 2] = replace(addrWindow[cmdnum/2], data, cmdnum);
 		this->x = addrWindow[0];
 		break;
-	case TFT_PASET:
-		addrWindow[cmdnum / 2 + 2] &= masks[cmdnum % 2];
-		addrWindow[cmdnum / 2 + 2] |= data << shifts[cmdnum % 2];
+	case TFT_PASET: // Set row address
+		addrWindow[cmdnum / 2 + 2] = replace(addrWindow[cmdnum/2 + 2], data, cmdnum);
 		this->y = addrWindow[2];
 		break;
-	case TFT_RAMWR:
+	case TFT_RAMWR: // Write to VRAM
 		this->pixelBuf[this->pixelIdx++] = data;
 		if (((bpp == TFT_RGB565) && (pixelIdx == 2)) || (pixelIdx == 3)) {
 			this->x += this->writeRGB(pixelData.data() + (y * state.w + x), pixelBuf.data());

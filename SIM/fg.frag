@@ -3,11 +3,24 @@ in vec2 Frag_UV;
 out vec4 outcolor;
 
 uniform sampler2D Texture;
-// inverted, sleep, idle, scrolling
+// inverted, sleep, idle, flip
 uniform uvec4 flags;
 
 void main(){
-	vec4 texel = texture(Texture, Frag_UV.st);
+	vec2 texcoord = Frag_UV.st;
+	
+	// Y flip
+	if ((flags.w & 2u) >= 1u) {
+		texcoord.y = 1.0 - texcoord.y;
+	}
+	
+	// X flip
+	if ((flags.w & 1u) >= 1u) {
+		texcoord.x = 1.0 - texcoord.x;
+	}
+	
+	vec4 texel = texture(Texture, texcoord);
+
 	// Sleep
 	if (flags.y >= 1u) {
 		outcolor = vec4(0.f);

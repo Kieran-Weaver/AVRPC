@@ -49,9 +49,9 @@ enum ILI9163_COMMANDS {
 };
 
 enum ILI9163_BPP {
-	TFT_RGB444 = 12,
-	TFT_RGB565 = 16,
-	TFT_RGB666 = 18
+	TFT_RGB444 = 3,
+	TFT_RGB565 = 5,
+	TFT_RGB666 = 6
 };
 
 struct TFT_State {
@@ -60,7 +60,10 @@ struct TFT_State {
 	bool inverted;
 	bool sleep;
 	bool idle;
-	bool scrolling;
+	bool xflip;
+	bool yflip;
+	
+	bool scrolling;	
 	// TFA + VSA + BFA must equal 1
 	float TFA; // Top fixed area
 	float VSA; // Vertical scroll area
@@ -104,7 +107,8 @@ class TFT_ILI9163{
 // Rendering state
 		TFT_State state = {
 			128, 160,                 // Dimensions
-			false, false, false,       // Inverted, sleep, idle
+			false, false, false,      // Inverted, sleep, idle
+			false, false,             // X-flip, Y-flip
 			false, 1.f, 0.f, 0.f, 0.f // Scroll settings
 		};
 // Internal registers

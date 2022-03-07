@@ -113,7 +113,12 @@ void AVRPC::Draw(const std::vector<uint32_t>& pixels, const TFT_State& state) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->w, this->h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, pixels.data());
 	glBindVertexArray(this->VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
-	glUniform4ui(this->PROG_flags, state.inverted, state.sleep, state.idle, state.scrolling);
+	glUniform4ui(this->PROG_flags,
+		state.inverted,
+		state.sleep,
+		state.idle,
+		state.xflip * 2 + state.yflip
+	);
 	
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, NULL);
 	
