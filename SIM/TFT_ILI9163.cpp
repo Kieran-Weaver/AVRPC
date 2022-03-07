@@ -6,8 +6,8 @@ TFT_ILI9163::TFT_ILI9163(){
 }
 
 void TFT_ILI9163::setSize(uint16_t w, uint16_t h){
-	this->w = w;
-	this->h = h;
+	this->state.w = w;
+	this->state.h = h;
 	this->pixelData.resize(w*h);
 }
 
@@ -18,27 +18,27 @@ void TFT_ILI9163::writeCommand(ILI9163_COMMANDS command){
 	switch (command) {
 	case TFT_SLPIN:
 	case TFT_DISPOFF:
-		sleep = true;
+		this->state.sleep = true;
 		break;
 	case TFT_SLPOUT:
 	case TFT_DISPON:
-		sleep = false;
+		this->state.sleep = false;
 		break;
 	case TFT_IDLEON:
-		idle = true;
+		this->state.idle = true;
 		break;
 	case TFT_IDLEOFF:
-		idle = false;
+		this->state.idle = false;
 		break;
 	case TFT_RESET:
 		this->pixelData.clear();
-		this->pixelData.resize(w*h);
+		this->pixelData.resize(state.w*state.h);
 		break;
 	case TFT_INVOFF:
-		this->inverted = false;
+		this->state.inverted = false;
 		break;
 	case TFT_INVON:
-		this->inverted = true;
+		this->state.inverted = true;
 		break;
 	case TFT_RAMWR:
 		this->x = addrWindow[0];
@@ -84,7 +84,7 @@ void TFT_ILI9163::writeData(uint8_t data){
 	case TFT_RAMWR:
 		this->pixelBuf[this->pixelIdx++] = data;
 		if (((bpp == TFT_RGB565) && (pixelIdx == 2)) || (pixelIdx == 3)) {
-			this->x += this->writeRGB(pixelData.data() + (y * w + x), pixelBuf.data());
+			this->x += this->writeRGB(pixelData.data() + (y * state.w + x), pixelBuf.data());
 			this->pixelIdx = 0;
 		}
 		
@@ -104,6 +104,10 @@ const std::vector<uint32_t>& TFT_ILI9163::getPixels() const{
 	return this->pixelData;
 }
 
+const TFT_State& TFT_ILI9163::getState() const{
+	return this->state;
+}
+
 void TFT_ILI9163::pushColor(uint16_t color){
 	this->writeData(color >> 8);
 	this->writeData(color & 0xFF);
@@ -116,7 +120,7 @@ void TFT_ILI9163::pushColor(uint16_t color, uint32_t count){
 }
 
 void TFT_ILI9163::fillScreen(uint16_t color){
-	this->fillRect(0, 0, w, h, color);
+	this->fillRect(0, 0, state.w, state.h, color);
 }
 
 void TFT_ILI9163::fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color){
@@ -188,9 +192,4 @@ int TFT_ILI9163::writeRGB(uint32_t* pixels, const uint8_t* buf) {
 	}
 	
 	return bdiff;
-}
-
-void TFT_ILI9163::getDims(uint16_t& w, uint16_t& h) const{
-	w = this->w;
-	h = this->h;
 }

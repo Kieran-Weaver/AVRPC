@@ -1,11 +1,13 @@
 #include <glbinding/gl/gl.h>
 #include <glbinding/glbinding.h>
 #include "AVRPC_SIM.h"
+#include "TFT_ILI9163.h"
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <cstdlib>
 #include <string>
 #include <fstream>
+#include <iostream>
 
 #define SCALE 6
 
@@ -98,17 +100,20 @@ AVRPC::AVRPC(){
 	glLinkProgram(this->PROG);
 	glUseProgram(this->PROG);
 	glUniform1i(glGetUniformLocation(this->PROG, "Texture"), 0);
+	
+	this->PROG_flags = glGetUniformLocation(this->PROG, "flags");
 }
 
-void AVRPC::Draw(const std::vector<uint32_t>& pixels, uint16_t w, uint16_t h) {
-	this->w = w;
-	this->h = h;
+void AVRPC::Draw(const std::vector<uint32_t>& pixels, const TFT_State& state) {
+	this->w = state.w;
+	this->h = state.h;
 
 	glUseProgram(this->PROG);
 	glBindTexture(GL_TEXTURE_2D, this->texID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->w, this->h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, pixels.data());
 	glBindVertexArray(this->VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
+	glUniform4ui(this->PROG_flags, state.inverted, state.sleep, state.idle, state.scrolling);
 	
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, NULL);
 	

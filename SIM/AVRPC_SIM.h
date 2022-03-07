@@ -2,12 +2,15 @@
 #define AVRPC_SIM_HPP
 #include <cstdint>
 #include <vector>
+
+struct TFT_State;
 struct GLFWwindow;
+
 class AVRPC{
 public:
 	AVRPC();
 	~AVRPC();
-	void Draw(const std::vector<uint32_t>& pixels, uint16_t w, uint16_t h);
+	void Draw(const std::vector<uint32_t>& pixels, const TFT_State& state);
 	operator bool();
 private:
 	uint32_t texID;
@@ -17,6 +20,7 @@ private:
 	uint32_t VS;
 	uint32_t FS;
 	uint32_t PROG;
+	uint32_t PROG_flags;
 	uint16_t w;
 	uint16_t h;
 	GLFWwindow* window;
@@ -29,4 +33,5 @@ private:
 		1.0f, 1.0f,   1.f, 0.f	// Bottom right
 	};
 };
+
 #endif

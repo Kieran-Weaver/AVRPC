@@ -55,15 +55,18 @@ enum ILI9163_BPP {
 };
 
 struct TFT_State {
+	uint16_t w;
+	uint16_t h;
+	bool inverted;
+	bool sleep;
+	bool idle;
+	bool scrolling;
 	// TFA + VSA + BFA must equal 1
 	float TFA; // Top fixed area
 	float VSA; // Vertical scroll area
 	float BFA; // Bottom fixed area
 	// SSA describes first line in VSA
 	float SSA; // Scroll start address
-	float inverted;
-	bool sleep;
-	bool idle;
 };
 
 class TFT_ILI9163{
@@ -84,9 +87,8 @@ class TFT_ILI9163{
 		void fillScreen(uint16_t color);
 // Simulator functions
 		void setSize(uint16_t w, uint16_t h);			// Set the size of the display
-		const std::vector<uint32_t>& getPixels() const;	// Get pixels written to display during last frame
-		const TFT_State getState() const;               // Get rendering state
-		void getDims(uint16_t& w, uint16_t& h) const;	// Get dimensions of screen
+		const std::vector<uint32_t>& getPixels() const;	// Get current framebuffer
+		const TFT_State& getState() const;              // Get rendering state
 	private:
 		int writeRGB(uint32_t* pixels, const uint8_t* buf);
 // Data for current frame
@@ -96,18 +98,19 @@ class TFT_ILI9163{
 		std::vector<uint32_t> pixelData; 	     // Color(X, Y) = pixelData[Y*W + X]
 		uint16_t x = 0;
 		uint16_t y = 0;
-		uint16_t w = 0;
-		uint16_t h = 0;
 		ILI9163_COMMANDS command; // Current command
 		ILI9163_BPP bpp = TFT_RGB565; // Current bpp
 		uint16_t cmdnum;          // Current data byte of command
 // Rendering state
+		TFT_State state = {
+			128, 160,                 // Dimensions
+			false, false, false,       // Inverted, sleep, idle
+			false, 1.f, 0.f, 0.f, 0.f // Scroll settings
+		};
+// Internal registers
 		uint16_t TFA; // Top fixed area
 		uint16_t VSA; // Vertical scroll area
 		uint16_t BFA; // Bottom fixed area
 		uint16_t SSA; // Scroll start address
-		bool inverted = false;
-		bool sleep = true;
-		bool idle = false;
 };
 #endif
