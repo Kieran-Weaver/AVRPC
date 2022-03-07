@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <vector>
 
+struct nk_context;
+struct nk_glfw;
 struct TFT_State;
 struct GLFWwindow;
 
@@ -10,6 +12,7 @@ class AVRPC{
 public:
 	AVRPC();
 	~AVRPC();
+	struct nk_context* ctx();
 	void Draw(const std::vector<uint32_t>& pixels, const TFT_State& state);
 	operator bool();
 private:
@@ -24,6 +27,7 @@ private:
 	uint16_t w;
 	uint16_t h;
 	GLFWwindow* window;
+	struct nk_glfw* ctx_;
 	// Vertex Buffers: X, Y, U, V
 	std::array<float, 48> scroll = {
 	// Top Quad

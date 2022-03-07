@@ -21,12 +21,15 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CXX) $^ -o $(TARGET) $(GL_FLAGS) $(LDFLAGS)
 
+nuklear_glfw_gl3.h:
+	sed -e 's/usr.ptr/(struct nk_glfw*)usr.ptr/g' ../nuklear/demo/glfw_opengl3/nuklear_glfw_gl3.h > nuklear_glfw_gl3.h
+	sed -i -e 's/status == GL_TRUE/status == (GLint)GL_TRUE/g' nuklear_glfw_gl3.h
 
-%.o : %.cpp
+%.o : %.cpp nuklear_glfw_gl3.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-%.o : %.c
+%.o : %.c nuklear_glfw_gl3.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 clean:
-	rm -fr $(TARGET) $(OBJS)
+	rm -fr $(TARGET) $(OBJS) nuklear_glfw_gl3.h

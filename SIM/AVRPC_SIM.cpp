@@ -7,11 +7,28 @@
 #include <cstdlib>
 #include <string>
 #include <fstream>
-#include <iostream>
-
-#define SCALE 6
 
 using namespace gl;
+
+#define MAX_VERTEX_BUFFER 256 * 1024
+#define MAX_ELEMENT_BUFFER 512 * 1024
+#define NK_IMPLEMENTATION
+#define NK_GLFW_GL3_IMPLEMENTATION
+#define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_STANDARD_VARARGS
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#define NK_INCLUDE_FONT_BAKING
+#define NK_INCLUDE_DEFAULT_FONT
+
+#include "../nuklear/nuklear.h"
+
+#define glfwGetWindowUserPointer(s) (struct nk_glfw*)glfwGetWindowUserPointer(s)
+#include "nuklear_glfw_gl3.h"
+#undef glfwGetWindowUserPointer
+
+#define SCALE 6
 
 std::string readWholeFile(const std::string& filename){
 	std::ifstream infile(filename,std::ios::in | std::ios::binary | std::ios::ate);
@@ -102,6 +119,20 @@ AVRPC::AVRPC(){
 	glUniform1i(glGetUniformLocation(this->PROG, "Texture"), 0);
 	
 	this->PROG_flags = glGetUniformLocation(this->PROG, "flags");
+	
+	this->ctx_ = new struct nk_glfw;
+	nk_glfw3_init(ctx_, this->window, NK_GLFW3_INSTALL_CALLBACKS);
+	
+	struct nk_font_atlas* atlas;
+	nk_glfw3_font_stash_begin(ctx_, &atlas);
+	nk_glfw3_font_stash_end(ctx_);
+	
+	glfwPollEvents();
+	nk_glfw3_new_frame(ctx_);
+}
+
+struct nk_context* AVRPC::ctx(void) {
+	return &(this->ctx_->ctx);
 }
 
 // Convert V coordinate (0 to 1) into Y coordinate (1 to -1)
@@ -112,6 +143,9 @@ constexpr float VtoY(float V) {
 void AVRPC::Draw(const std::vector<uint32_t>& pixels, const TFT_State& state) {
 	this->w = state.w;
 	this->h = state.h;
+	
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(1.f, 1.f, 1.f, 1.f);
 
 	glUseProgram(this->PROG);
 	glBindTexture(GL_TEXTURE_2D, this->texID);
@@ -153,12 +187,16 @@ void AVRPC::Draw(const std::vector<uint32_t>& pixels, const TFT_State& state) {
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, NULL);
 	}
 	
+	nk_glfw3_render(ctx_, NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
 	glfwSwapBuffers(this->window);
 	glfwPollEvents();
+	nk_glfw3_new_frame(ctx_);
 }
 
 AVRPC::~AVRPC(){
 	glDeleteTextures(1, &(this->texID));
+	nk_glfw3_shutdown(this->ctx_);
+	delete this->ctx_;
 	glfwDestroyWindow(this->window);
 	glfwTerminate();
 }

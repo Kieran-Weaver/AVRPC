@@ -1,3 +1,6 @@
 [submodule "TFT_ILI9163"]
 	path = TFT_ILI9163
 	url = https://github.com/Kieran-Weaver/TFT_ILI9163
+[submodule "nuklear"]
+	path = nuklear
+	url = https://github.com/Immediate-Mode-UI/Nuklear
