@@ -24,6 +24,9 @@ void TFT_ILI9163::writeCommand(ILI9163_COMMANDS command){
 	case TFT_DISPON:
 		this->state.sleep = false;
 		break;
+	case TFT_NORON:
+		this->state.scrolling = false;
+		break;
 	case TFT_IDLEON:
 		this->state.idle = true;
 		break;
@@ -73,6 +76,7 @@ void TFT_ILI9163::writeData(uint8_t data){
 		break;
 	case TFT_VSSA: // Vertical Scroll Start Address
 		state.SSA = replace(state.SSA, data, cmdnum);
+		state.scrolling = true;
 		break;
 	case TFT_IPA: // Interface Pixel Format
 		bpp = static_cast<ILI9163_BPP>(data & 7);

@@ -63,7 +63,7 @@ struct TFT_State {
 	bool xflip;
 	bool yflip;
 	
-	bool scrolling;	
+	bool scrolling;
 	// TFA + VSA + BFA must equal 1
 	float TFA; // Top fixed area
 	float VSA; // Vertical scroll area

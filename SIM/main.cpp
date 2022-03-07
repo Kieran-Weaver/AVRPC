@@ -12,13 +12,26 @@ int main(int argc, char **argv){
 	h = initial_state.h;
 
 	tft.fillScreen(0xFFFF);
+	tft.writeCommand(TFT_VSCRL);
+	tft.writeData(0);
+	tft.writeData(40);
+	tft.writeData(0);
+	tft.writeData(80);
+	tft.writeData(0);
+	tft.writeData(40);
 
 	while (avrpc){
 		tft.fillRect(0, 0, w, h/2, i);
 		tft.fillRect(0, h/2, w, h/2, 0xFFFF-i);
+		
+		
+		tft.writeCommand(TFT_VSSA);
+		tft.writeData(0);
+		tft.writeData(i % 160);
+
 		avrpc.Draw(tft.getPixels(), tft.getState());
 		i++;
-		
+/* Testing for inversion and idle modes
 		if ((i & 255) == 0) {
 			tft.writeCommand(TFT_INVOFF);
 		}
@@ -31,6 +44,7 @@ int main(int argc, char **argv){
 		if ((i & 128) == 0) {
 			tft.writeCommand(TFT_IDLEOFF);
 		}
+*/ 
 	}
 	return 0;
 }

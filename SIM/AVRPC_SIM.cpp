@@ -104,6 +104,11 @@ AVRPC::AVRPC(){
 	this->PROG_flags = glGetUniformLocation(this->PROG, "flags");
 }
 
+// Convert V coordinate (0 to 1) into Y coordinate (1 to -1)
+constexpr float VtoY(float V) {
+	return (V * 2.f) - 1.f;
+}
+
 void AVRPC::Draw(const std::vector<uint32_t>& pixels, const TFT_State& state) {
 	this->w = state.w;
 	this->h = state.h;
@@ -120,7 +125,33 @@ void AVRPC::Draw(const std::vector<uint32_t>& pixels, const TFT_State& state) {
 		state.xflip * 2 + state.yflip
 	);
 	
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, NULL);
+	if (state.scrolling) {
+		// Top Quad: Process TFA
+		// TFA V coordinates
+		scroll[7] = scroll[11] = float(h - state.TFA) / float(h);
+		// TFA Y coordinates
+		scroll[5] = scroll[9]  = VtoY(scroll[7]);
+		
+		// Bottom Quad: Process BFA
+		// BFA V coordinates
+		scroll[15 + 32] = scroll[3 + 32] = float(state.BFA) / float(h);
+		// BFA Y coordinates
+		scroll[1 + 32] = scroll[13 + 32] = VtoY(scroll[3 + 32]);
+
+		// Middle Quad: Set coordinates
+		scroll[1 + 16] = scroll[13 + 16] = scroll[9]; // Top Y
+		scroll[5 + 16] = scroll[9 + 16] = scroll[1 + 32]; // Bottom Y
+		
+		// Middle Quad: Set UV
+		scroll[3 + 16] = scroll[15 + 16] = float(h - state.SSA) / float(h); // Top V
+		scroll[7 + 16] = scroll[11 + 16] = float(h - (state.SSA + state.VSA)) / float(h); // Bottom V
+		
+		glBufferData(GL_ARRAY_BUFFER, scroll.size()*sizeof(float), scroll.data(), GL_DYNAMIC_DRAW);
+		glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_BYTE, NULL);
+	} else {
+		glBufferData(GL_ARRAY_BUFFER, noscroll.size()*sizeof(float), noscroll.data(), GL_DYNAMIC_DRAW);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, NULL);
+	}
 	
 	glfwSwapBuffers(this->window);
 	glfwPollEvents();
