@@ -1,17 +1,17 @@
 CC=gcc
 CXX=g++
 TARGET=Sim
-CFLAGS := -Og -g -march=native
-CXXFLAGS := -Og -g -march=native -fno-rtti -std=c++17
+CFLAGS := -Og -g -march=native -DNDEBUG
+CXXFLAGS := -Og -g -march=native -fno-rtti -std=c++17  -DNDEBUG
 SRCS := $(shell find . -path "*.cpp") $(shell find . -path "*.c")
 OBJS := $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(SRCS)))
 
 ifdef OS
 	LDFLAGS=-Wl,-O1 -static-libstdc++ -static-libgcc -static -lz
-	GL_FLAGS=-lglbinding -lopengl32 -lglfw3 -mwindows
+	GL_FLAGS=-lsimavr -lglbinding -lopengl32 -lglfw3 -mwindows
 else
 	LDFLAGS=-lz -g -Wl,-O1
-	GL_FLAGS=-lglbinding -lGL -lglfw
+	GL_FLAGS=-lsimavr -lglbinding -lGL -lglfw
 endif
 
 .PHONY: all clean
