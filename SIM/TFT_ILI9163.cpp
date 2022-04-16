@@ -1,5 +1,6 @@
 #include "TFT_ILI9163.h"
 #include <cstddef>
+#include <iostream>
 
 TFT_ILI9163::TFT_ILI9163(){
 	this->setSize(128, 160);
@@ -48,7 +49,13 @@ void TFT_ILI9163::writeCommand(ILI9163_COMMANDS command){
 		this->y = addrWindow[2];
 		this->pixelIdx = 0;
 		break;
+	case TFT_IPA:
+	case TFT_MACTL:
+	case TFT_CASET:
+	case TFT_PASET:
+		break;
 	default:
+		std::cout << "Invalid command: " << (uint32_t)command << std::endl;
 		break;
 	}
 }
@@ -64,6 +71,7 @@ static uint16_t replace(uint16_t data, uint8_t byte, uint16_t cmdnum) {
 }
 
 void TFT_ILI9163::writeData(uint8_t data){
+	int xdiff = 0;
 
 	switch (this->command) {
 	// case TFT_COLSET unsupported
@@ -73,6 +81,12 @@ void TFT_ILI9163::writeData(uint8_t data){
 		else if (cmdnum <= 5) state.BFA = replace(state.BFA, data, cmdnum);
 		break;
 	case TFT_MACTL: // Memory Access Control
+		MY =  (data & 0x80) != 0;
+		MX =  (data & 0x40) != 0;
+		MV =  (data & 0x20) != 0;
+		ML =  (data & 0x10) != 0;
+		RGB = (data & 0x08) != 0;
+		MH =  (data & 0x04) != 0;
 		break;
 	case TFT_VSSA: // Vertical Scroll Start Address
 		state.SSA = replace(state.SSA, data, cmdnum);

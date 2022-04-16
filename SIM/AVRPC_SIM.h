@@ -31,26 +31,26 @@ private:
 	// Vertex Buffers: X, Y, U, V
 	std::array<float, 48> scroll = {
 	// Top Quad
-		-1.0f, 1.0f,  0.f, 1.f,	// Top left
-		-1.0f, -1.0f, 0.f, 0.f,	// Bottom left
-		1.0f, -1.0f,  1.f, 0.f,	// Bottom right
-		1.0f, 1.0f,   1.f, 1.f,	// Top right
+		(-1.0f)/3.0f, 1.0f,  0.f, 160.f,	// Top left
+		(-1.0f)/3.0f, -1.0f, 0.f, 0.f,	// Bottom left
+		1.0f, -1.0f,  160.f, 0.f,	// Bottom right
+		1.0f, 1.0f,   160.f, 160.f,	// Top right
 	// Middle Quad + 16
-		-1.0f, 1.0f,  0.f, 1.f,	// Top left
-		-1.0f, -1.0f, 0.f, 0.f,	// Bottom left
-		1.0f, -1.0f,  1.f, 0.f,	// Bottom right
-		1.0f, 1.0f,   1.f, 1.f,	// Top right
+		(-1.0f)/3.0f, 1.0f,  0.f, 160.f,	// Top left
+		(-1.0f)/3.0f, -1.0f, 0.f, 0.f,	// Bottom left
+		1.0f, -1.0f,  160.f, 0.f,	// Bottom right
+		1.0f, 1.0f,   160.f, 160.f,	// Top right
 	// Bottom Quad + 32
-		-1.0f, 1.0f,  0.f, 1.f,	// Top left
-		-1.0f, -1.0f, 0.f, 0.f,	// Bottom left
-		1.0f, -1.0f,  1.f, 0.f,	// Bottom right
-		1.0f, 1.0f,   1.f, 1.f	// Top right
+		(-1.0f)/3.0f, 1.0f,  0.f, 160.f,	// Top left
+		(-1.0f)/3.0f, -1.0f, 0.f, 0.f,	// Bottom left
+		1.0f, -1.0f,  160.f, 0.f,	// Bottom right
+		1.0f, 1.0f,   160.f, 160.f	// Top right
 	};
 	const std::array<float, 16> noscroll = {
-		-1.0f, 1.0f,  0.f, 1.f,	// Top left
+		-1.0f, 1.0f,  0.f, 160.f,	// Top left
 		-1.0f, -1.0f, 0.f, 0.f,	// Bottom left
-		1.0f, -1.0f,  1.f, 0.f,	// Bottom right
-		1.0f, 1.0f,   1.f, 1.f	// Top right
+		1.0f, -1.0f,  160.f, 0.f,	// Bottom right
+		1.0f, 1.0f,   160.f, 160.f	// Top right
 	};
 };
 

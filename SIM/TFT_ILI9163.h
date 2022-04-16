@@ -95,18 +95,18 @@ class TFT_ILI9163{
 	private:
 		int writeRGB(uint32_t* pixels, const uint8_t* buf);
 // Data for current frame
-		std::array<uint16_t, 4> addrWindow = {}; // Current rectangle where pixels are written to
+		std::array<int16_t, 4> addrWindow = {}; // Current rectangle where pixels are written to
 		std::array<uint8_t, 3> pixelBuf = {};    // SPI Buffer for pixels
 		int8_t pixelIdx = 0;
 		std::vector<uint32_t> pixelData; 	     // Color(X, Y) = pixelData[Y*W + X]
-		uint16_t x = 0;
-		uint16_t y = 0;
+		int16_t x = 0;
+		int16_t y = 0;
 		ILI9163_COMMANDS command; // Current command
 		ILI9163_BPP bpp = TFT_RGB565; // Current bpp
 		uint16_t cmdnum;          // Current data byte of command
 // Rendering state
 		TFT_State state = {
-			128, 160,                 // Dimensions
+			160, 128,                 // Dimensions
 			false, false, false,      // Inverted, sleep, idle
 			false, false,             // X-flip, Y-flip
 			false, 1.f, 0.f, 0.f, 0.f // Scroll settings
@@ -116,5 +116,11 @@ class TFT_ILI9163{
 		uint16_t VSA; // Vertical scroll area
 		uint16_t BFA; // Bottom fixed area
 		uint16_t SSA; // Scroll start address
+		bool MY = false; // Row Address Order
+		bool MX = false; // Column Address Order
+		bool MV = false; // Page / Column Selection
+		bool ML = false; // Vertical Order
+		bool RGB = false; // 0 = RGB, 1 = BGR
+		bool MH = false; // Display data latch order
 };
 #endif

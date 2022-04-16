@@ -67,7 +67,7 @@ AVRPC::AVRPC(){
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	this->window = glfwCreateWindow(128 * SCALE, 160 * SCALE, "AVRPC Simulator", nullptr, nullptr);
+	this->window = glfwCreateWindow(128 * (SCALE * 1.5), 160 * SCALE, "AVRPC Simulator", nullptr, nullptr);
 	if (!this->window){
 		glfwTerminate();
 		std::exit(0);
@@ -80,9 +80,9 @@ AVRPC::AVRPC(){
 	glBindVertexArray(this->VAO);
 
 	glGenTextures(1, &(this->texID));
-	glBindTexture(GL_TEXTURE_2D, this->texID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glBindTexture(GL_TEXTURE_RECTANGLE, this->texID);
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glGenBuffers(1, &(this->VBO));
 	glGenBuffers(1, &(this->IBO));
@@ -148,8 +148,8 @@ void AVRPC::Draw(const std::vector<uint32_t>& pixels, const TFT_State& state) {
 	glClearColor(1.f, 1.f, 1.f, 1.f);
 
 	glUseProgram(this->PROG);
-	glBindTexture(GL_TEXTURE_2D, this->texID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->w, this->h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, pixels.data());
+	glBindTexture(GL_TEXTURE_RECTANGLE, this->texID);
+	glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA, this->w, this->h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, pixels.data());
 	glBindVertexArray(this->VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
 	glUniform4ui(this->PROG_flags,

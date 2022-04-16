@@ -2,7 +2,7 @@
 in vec2 Frag_UV;
 out vec4 outcolor;
 
-uniform sampler2D Texture;
+uniform sampler2DRect Texture;
 // inverted, sleep, idle, flip
 uniform uvec4 flags;
 
