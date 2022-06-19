@@ -8,7 +8,7 @@ extern "C" {
 #include <avr/io.h>
 #include <stdint.h>
 // SD chip select pin
-#define SD_CS_PIN 8
+#define SD_CS_PIN 17
 
 #if SD_CS_PIN < 8
 #define SD_CS_PORT PORTD

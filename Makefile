@@ -1,7 +1,7 @@
 TARGET  = main
 MCU     = atmega328p
 F_CPU   = 16000000
-PRG     = arduino -P /dev/ttyACM0
+PRG     = usbtiny
 AVRDUDE = avrdude -c $(PRG) -p $(MCU)
 OBJCOPY = avr-objcopy
 SIZE    = avr-size

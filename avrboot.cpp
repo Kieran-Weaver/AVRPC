@@ -86,7 +86,7 @@ void flash_write (DWORD, const BYTE*);	/* Program a flash page (asmfunc.S) */
 };
 
 
-static uint8_t pagecmp(const DWORD fa, uint8_t buff[SPM_PAGESIZE])
+static uint8_t pagecmp(const WORD fa, uint8_t buff[SPM_PAGESIZE])
 {
 	UINT i;
 	uint8_t b_flash,b_buff;
@@ -110,7 +110,7 @@ static uint8_t pagecmp(const DWORD fa, uint8_t buff[SPM_PAGESIZE])
 }
 
 bool doFlash(FATFS* fs) {
-	DWORD fa;	 /* Flash address */
+	WORD fa;	 /* Flash address */
 	BYTE* tbuf; /* Temporary buffer */
 	BYTE done;
 	#if USE_LED
