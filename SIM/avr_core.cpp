@@ -105,6 +105,7 @@ void avr_core::load_program(avr_fw_type type, std::string_view filename) {
 			free(data);
 			break;
 		case avr_fw_type::BIN:
+			base = 0;
 			file.open(filename.data(), std::ios::binary | std::ios::ate);
 			size = file.tellg();
 			file.seekg(0, std::ios::beg);

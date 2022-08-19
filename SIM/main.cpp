@@ -21,9 +21,9 @@ int main(int argc, char **argv){
 	avr_fw_type fwtype = avr_fw_type::ELF;
 	char filename[256] = {0};
 	avr_core* avr = new avr_core(
-		avr_port{'D', 3}, // Data / CMD
-		avr_port{'B', 0}, // Chip Select (active low)
-		avr_port{'D', 2}  // Reset
+		avr_port{'C', 2}, // Data / CMD
+		avr_port{'C', 0}, // Chip Select (active low)
+		avr_port{'C', 1}  // Reset
 	);
 	
 	avr->rst() = [&]() {
