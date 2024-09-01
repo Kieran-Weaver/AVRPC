@@ -7,8 +7,8 @@
 
 // Hidden implementation to obscure ESP32/PC differences
 // Portrait / Landscape is in the eye of the beholder,
-// "portrait" = "true" means pixels are written in row-major order
-// "portrait" = "false" means pixels are written in column-major order
+// "portrait" = "true" means pixels are written in X-major order
+// "portrait" = "false" means pixels are written in Y-major order
 // it may be useful to set this to the opposite of your actual rendering orientation
 //
 // The ST7789V supports mirroring and all sorts of crazy bs
@@ -38,4 +38,10 @@ void tft_pushPAL8( uint8_t* pixels, uint16_t* pal8, uint32_t len );
 // ( that's not supported here )
 void tft_push444( uint8_t* data, uint32_t len );
 
+// start of frame, end of previous frame
+// this "portrait" is completely independent of the other one
+// and corresponds to how the user rotates the display
+void tft_draw( bool portrait );
+
+void tft_shut();
 #endif

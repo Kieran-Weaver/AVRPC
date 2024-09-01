@@ -1,4 +1,5 @@
 #include "tft.h"
+#include "draw.h"
 #include <assert.h>
 #include <string.h>
 
@@ -20,8 +21,10 @@ struct TFT {
 static TFT tft;
 
 void tft_init( bool portrait ) {
-	tft = { portrait, {} };
+	tft = {};
+	tft.portrait = portrait;
 	memset( tft.pixels, 0, sizeof( tft.pixels ) );
+	draw_init();
 }
 
 void tft_setRect( int16_t x1, int16_t y1, int16_t x2, int16_t y2 ) {
@@ -48,7 +51,9 @@ void tft_push1( uint16_t pixel ) {
 	assert( ( tft.x >= tft.x1 ) && ( tft.x <= tft.x2 ) );
 	assert( ( tft.y >= tft.y1 ) && ( tft.y <= tft.y2 ) );
 
-	if ( portrait ) {
+	tft.pixels[ tft.y * 240 + tft.x ] = pixel;
+
+	if ( tft.portrait ) {
 		tft.x++;
 		if ( tft.x > tft.x2 ) {
 			tft.y++;
@@ -123,4 +128,12 @@ void tft_push444( uint8_t* data, uint32_t len ) {
 		pixel = pixel << 1;
 		tft_push1( pixel );
 	}
+}
+
+void tft_draw( bool portrait ) {
+	draw_draw( portrait, tft.pixels );
+}
+
+void tft_shut() {
+	draw_shut();
 }
