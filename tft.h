@@ -6,26 +6,36 @@
 // Low Level TFT Emulator Interface - How the display actually works
 
 // Hidden implementation to obscure ESP32/PC differences
-// 0 for column major, 1 for row major
+// Portrait / Landscape is in the eye of the beholder,
+// "portrait" = "true" means pixels are written in row-major order
+// "portrait" = "false" means pixels are written in column-major order
+// it may be useful to set this to the opposite of your actual rendering orientation
+//
+// The ST7789V supports mirroring and all sorts of crazy bs
+// that's not supported by this driver because I don't get how to simulate it
+//
 // TFT::begin()
-void tft_init( int16_t rows, int16_t cols, bool major );
+void tft_init( bool portrait );
 
 // TFT::setAddrWindow + setWrite
-// Actual display commands use ( left, right ), ( top, bottom )
-// Adafruit uses x y w h for no reason
+// X is always 0-240, Y is always 0-320
+// Does NOT change depending on orientation
 void tft_setRect( int16_t x1, int16_t y1, int16_t x2, int16_t y2 );
 
 // Single pixel
 void tft_push1( uint16_t pixel );
 // Multiple of the same pixel, len = number of pixels
 void tft_pushRLE( uint16_t pixel, uint32_t len );
+// Direct - 2 pixels per byte, len = number of pixels
+void tft_push( uint16_t* pixels, uint32_t len );
 // 4-bit Palette - 2 pixels per byte, len = number of pixels
+// the first pixel is the HIGH nibble
 void tft_pushPAL4( uint8_t* pixels, uint16_t* pal4, uint32_t len );
 // 8-bit Palette - 1 pixel per byte, len = number of pixels
 void tft_pushPAL8( uint8_t* pixels, uint16_t* pal8, uint32_t len );
-// Direct - 2 pixels per byte, len = number of pixels
-void tft_push( uint16_t* pixels, uint32_t len );
-// 444 mode, len = number of bytes
+// 444 mode, len = number of pixels, must be even
+// In the actual display, you can use this as a 64-color palette
+// ( that's not supported here )
 void tft_push444( uint8_t* data, uint32_t len );
 
 #endif
