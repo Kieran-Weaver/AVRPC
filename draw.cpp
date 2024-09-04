@@ -1,6 +1,8 @@
 #include "draw.h"
 #include <stdlib.h>
 #include <assert.h>
+
+#ifndef _WIN32
 #include <SDL.h>
 
 /* SDL Boilerplate stuff */
@@ -78,4 +80,10 @@ void draw_shut() {
 	SDL_DestroyWindow( window );
 	SDL_Quit();
 }
+#else
+/* Win32 API code */
 
+#include <windows.h>
+#include <GL/gl.h>
+
+#endif

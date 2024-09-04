@@ -1,11 +1,31 @@
-CXX := g++
-EXE := main
-SRCS := $(shell find . -name '*.cpp')
-CXXFLAGS := -Wno-narrowing -Og -g $(shell sdl2-config --cflags)
-LDFLAGS := $(shell sdl2-config --libs)
+TARGET  = sim
+CXX     = g++
+INC_FLAGS :=
+CPPFLAGS = $(INC_FLAGS) -MT $@ -MMD -MP -MF build/$*.d
+CXXFLAGS = -Wno-narrowing -O2 -std=c++17
+EXE :=
+SRCS=$(shell find . -path "*.cpp")
+OBJS=$(patsubst %.cpp, ./build/%.o, $(SRCS))
+DEPS := $(OBJS:.o=.d)
+LDFLAGS :=
 
-all: $(SRCS)
-	$(CXX) $(CXXFLAGS) $(SRCS) $(LDFLAGS) -o $(EXE)
+ifeq ($(OS),Windows_NT)
+	EXE += .exe
+else
+	INC_FLAGS += $(shell sdl2-config --cflags)
+	LDFLAGS += $(shell sdl2-config --libs)
+endif
+
+all: $(TARGET)$(EXE)
 
 clean:
-	rm -f $(EXE)
+	rm -rf $(TARGET)$(EXE) build/
+
+./build/%.o : ./%.cpp
+	mkdir -p $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+
+$(TARGET)$(EXE): $(OBJS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $(TARGET)$(EXE) $(OBJS)
+
+-include $(DEPS)
