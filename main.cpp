@@ -6,7 +6,7 @@
 #define BLACK 0
 #define RED 0xF800
 
-int main( int argc, char **argv ) {
+int MAIN {
 	tft_init( true );
 	bool quit = false;
 	fb FB;

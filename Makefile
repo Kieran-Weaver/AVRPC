@@ -11,6 +11,7 @@ LDFLAGS :=
 
 ifeq ($(OS),Windows_NT)
 	EXE += .exe
+	LDFLAGS += -mwindows -lwinmm -lgdi32 -lopengl32
 else
 	INC_FLAGS += $(shell sdl2-config --cflags)
 	LDFLAGS += $(shell sdl2-config --libs)
@@ -26,6 +27,6 @@ clean:
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 $(TARGET)$(EXE): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $(TARGET)$(EXE) $(OBJS)
+	$(CXX) $(CXXFLAGS) $(OBJS) $(LDFLAGS) -o $(TARGET)$(EXE)
 
 -include $(DEPS)

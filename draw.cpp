@@ -92,7 +92,76 @@ bool draw_done(void) {
 #else
 /* Win32 API code */
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <GL/gl.h>
+
+static volatile bool gl_initialized;
+static HWND window;
+static volatile bool done = false;
+
+static void win32_opengl_init( HDC hdc ) {
+	PIXELFORMATDESCRIPTOR pdf = {
+		.nSize = sizeof(pdf),
+		.nVersion = 1,
+		.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+		.iPixelType = PFD_TYPE_RGBA,
+		.cColorBits = 32,
+		.cDepthBits = 24,
+		.cStencilBits = 8,
+		.iLayerType = PFD_MAIN_PLANE,
+	};
+	SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pdf), &pdf);
+	HGLRC old = wglCreateContext( hdc );
+	wglMakeCurrent( hdc, old );
+	gl_initialized = true;
+}
+
+static LRESULT CALLBACK
+win32_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam ) {
+	switch (msg) {
+		case WM_CREATE:
+			win32_opengl_init(GetDC(hwnd));
+			break;
+		case WM_CLOSE:
+		case WM_DESTROY:
+			PostQuitMessage( 0 );
+			done = true;
+			break;
+		default:
+			return DefWindowProc(hwnd, msg, wparam, lparam);
+	}
+	return 0;
+}
+
+void draw_init( void ) {
+	const char* title = "ESP32 / AVRPC5";
+	WNDCLASS wndclass = {
+		.style = CS_OWNDC,
+		.lpfnWndProc = win32_wndproc,
+		.lpszClassName = "gl",
+	};
+	RegisterClass( &wndclass );
+	DWORD style = WS_OVERLAPPED | WS_VISIBLE | WS_MINIMIZEBOX | WS_SYSMENU;
+	window = CreateWindow( "gl", title, style, 0, 0, 960, 720, 0, 0, 0, 0 );
+}
+
+void draw_draw( bool portrait, const uint16_t* pixels ) {
+}
+
+void draw_shut( void ) {
+}
+
+bool draw_done( void ) {
+	MSG msg;
+	while ( PeekMessage( &msg, 0, 0, 0, TRUE ) ) {
+		if ( msg.message == WM_QUIT )
+			return true;
+		TranslateMessage( &msg );
+		DispatchMessage( &msg );
+	}
+
+	return done;
+}
 
 #endif
