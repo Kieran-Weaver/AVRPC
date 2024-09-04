@@ -1,6 +1,6 @@
 #include "tft.h"
 #include "gfx.h"
-#include <SDL.h>
+#include "draw.h"
 
 #define WHITE 0xFFFF
 #define BLACK 0
@@ -14,9 +14,7 @@ int main( int argc, char **argv ) {
 	FB.init( 320, 240 );
 	
 	while ( !quit ) {
-		SDL_Event e;
-		SDL_PollEvent( &e );
-		if ( e.type == SDL_QUIT )
+		if ( draw_done() )
 			quit = true;
 
 		// Drawing code goes here

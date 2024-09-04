@@ -80,6 +80,15 @@ void draw_shut() {
 	SDL_DestroyWindow( window );
 	SDL_Quit();
 }
+
+bool draw_done(void) {
+	SDL_Event e;
+	SDL_PollEvent( &e );
+	if ( e.type == SDL_QUIT )
+		return true;
+	return false;
+}
+
 #else
 /* Win32 API code */
 
