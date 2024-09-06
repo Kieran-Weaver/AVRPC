@@ -94,17 +94,18 @@ bool draw_done(void) {
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <GL/gl.h>
 
-static volatile bool gl_initialized;
+static volatile bool initialized;
 static HWND window;
 static volatile bool done = false;
+static uint32_t* px32 = nullptr;
+static volatile bool _port = false;
 
-static void win32_opengl_init( HDC hdc ) {
+static void win32_init( HDC hdc ) {
 	PIXELFORMATDESCRIPTOR pdf = {
 		.nSize = sizeof(pdf),
 		.nVersion = 1,
-		.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+		.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_GDI,
 		.iPixelType = PFD_TYPE_RGBA,
 		.cColorBits = 32,
 		.cDepthBits = 24,
@@ -112,16 +113,41 @@ static void win32_opengl_init( HDC hdc ) {
 		.iLayerType = PFD_MAIN_PLANE,
 	};
 	SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pdf), &pdf);
-	HGLRC old = wglCreateContext( hdc );
-	wglMakeCurrent( hdc, old );
-	gl_initialized = true;
+	px32 = new uint32_t[ 320 * 240 ];
+
+	initialized = true;
+}
+
+static void doPaint( HDC hdc ) {
+	BITMAPINFOHEADER bmih = { 0 };
+	bmih.biSize = sizeof( BITMAPINFOHEADER );
+	bmih.biWidth = ( _port ? 240 : 320 );
+	bmih.biHeight = ( _port ? -320 : -240 );
+	bmih.biPlanes = 1;
+	bmih.biBitCount = 32;
+	bmih.biCompression = BI_RGB;
+	bmih.biSizeImage = 0;
+	bmih.biXPelsPerMeter = 10;
+	bmih.biYPelsPerMeter = 10;
+
+	BITMAPINFO dbmi = { 0 };
+	dbmi.bmiHeader = bmih;
+
+	StretchDIBits( hdc, 0, 0, bmih.biWidth * 3, -bmih.biHeight * 3, 0, 0, bmih.biWidth, -bmih.biHeight, px32, &dbmi, 0, SRCCOPY );
 }
 
 static LRESULT CALLBACK
 win32_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam ) {
+	PAINTSTRUCT ps;
+	HDC hdc;
 	switch (msg) {
 		case WM_CREATE:
-			win32_opengl_init(GetDC(hwnd));
+			win32_init(GetDC(hwnd));
+			break;
+		case WM_PAINT:
+			hdc = BeginPaint( hwnd, &ps );
+			doPaint( hdc );
+			EndPaint( window, &ps );
 			break;
 		case WM_CLOSE:
 		case WM_DESTROY:
@@ -137,16 +163,32 @@ win32_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam ) {
 void draw_init( void ) {
 	const char* title = "ESP32 / AVRPC5";
 	WNDCLASS wndclass = {
-		.style = CS_OWNDC,
 		.lpfnWndProc = win32_wndproc,
 		.lpszClassName = "gl",
 	};
 	RegisterClass( &wndclass );
-	DWORD style = WS_OVERLAPPED | WS_VISIBLE | WS_MINIMIZEBOX | WS_SYSMENU;
+	DWORD style = WS_OVERLAPPED | WS_VISIBLE;
 	window = CreateWindow( "gl", title, style, 0, 0, 960, 720, 0, 0, 0, 0 );
 }
 
+uint32_t rgb565to888( uint16_t pixel ) {
+	uint32_t c;
+	c = ( ( pixel >> 11 ) * 527 + 23 ) >> 6;
+	c = (c << 8) | ( ( ( pixel >> 5 ) & 0x3f ) * 259 + 33 ) >> 6;
+	c = (c << 8) |( ( pixel & 0x1f ) * 527 + 23 ) >> 6;
+	return c;
+}
+
 void draw_draw( bool portrait, const uint16_t* pixels ) {
+	if (!initialized) assert( false );
+
+	for (int i = 0; i < (320*240); i++ ) {
+		px32[ i ] = rgb565to888( pixels[ i ] );
+	}
+
+	_port = portrait;
+
+	RedrawWindow( window, NULL, NULL, RDW_INTERNALPAINT );
 }
 
 void draw_shut( void ) {
@@ -154,9 +196,9 @@ void draw_shut( void ) {
 
 bool draw_done( void ) {
 	MSG msg;
-	while ( PeekMessage( &msg, 0, 0, 0, TRUE ) ) {
+	while ( PeekMessage( &msg, 0, 0, 0, PM_REMOVE ) == TRUE ) {
 		if ( msg.message == WM_QUIT )
-			return true;
+			break;
 		TranslateMessage( &msg );
 		DispatchMessage( &msg );
 	}

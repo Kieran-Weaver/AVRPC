@@ -12,11 +12,8 @@ int MAIN {
 	fb FB;
 
 	FB.init( 320, 240 );
-	
-	while ( !quit ) {
-		if ( draw_done() )
-			quit = true;
 
+	while ( !quit ) {
 		// Drawing code goes here
 		FB.fillScreen( WHITE );
 		FB.drawRect( 20, 20, 300, 220, BLACK );
@@ -26,6 +23,9 @@ int MAIN {
 		// Drawing code end
 
 		tft_draw( false );
+
+		if ( draw_done() )
+			quit = true;
 
 	}
 
