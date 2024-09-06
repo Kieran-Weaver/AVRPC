@@ -20,7 +20,7 @@ void draw_init( void ) {
 	window = SDL_CreateWindow( "ESP32 / AVRPC5", SDL_WINDOWPOS_UNDEFINED,
 		SDL_WINDOWPOS_UNDEFINED, 320 * SCALE, 240 * SCALE, SDL_WINDOW_SHOWN );
 	assert( !!window && "Failed to create window" );
-	renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED );
+	renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_PRESENTVSYNC );
 	assert( !!renderer && "Failed to create renderer" );
 	lastw = -1;
 	lasth = -1;
