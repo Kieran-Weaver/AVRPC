@@ -46,6 +46,9 @@ void tft_setScrollWindow( int16_t tfa, int16_t vsa, int16_t bfa );
 // must be within the VSA
 void tft_scroll( uint16_t scroll );
 
+// Invert colours
+void tft_invert( bool invert );
+
 // Single pixel
 void tft_push1( uint16_t pixel );
 // Multiple of the same pixel, len = number of pixels

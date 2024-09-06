@@ -8,6 +8,7 @@ struct TFT {
 	uint16_t pixels[ 320 * 240 ];
 // TFT attributes
 	bool portrait;
+	bool invert;
 // Drawing position
 	int x;
 	int y;
@@ -72,6 +73,12 @@ void tft_scroll( uint16_t scroll ) {
 	assert( ( scroll >= tft.tfa ) && ( scroll <= ( tft.tfa + tft.vsa ) ) );
 
 	tft.spiBytes += sizeof( scroll );
+}
+
+void tft_invert( bool invert ) {
+	tft.invert = invert;
+
+	tft.spiBytes += 1;
 }
 
 void tft__push1( uint16_t pixel ) {
@@ -180,6 +187,12 @@ uint32_t tft_draw( bool portrait ) {
 	}
 
 	memcpy( newpixels + ( ( tft.tfa + tft.vsa ) * 240 ), tft.pixels + ( ( tft.tfa + tft.vsa ) * 240 ), tft.bfa * 480 );
+
+	if ( tft.invert ) {
+		for ( int i = 0; i < ( 320 * 240 ); i++ ) {
+			newpixels[ i ] = ~ newpixels[ i ];
+		}
+	}
 
 	draw_draw( portrait, newpixels );
 	tft.spiBytes = 0;
