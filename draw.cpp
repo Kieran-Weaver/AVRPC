@@ -46,18 +46,17 @@ void draw_draw( bool portrait, const uint16_t* pixels ) {
 		if ( texture != nullptr ) {
 			SDL_DestroyTexture( texture );
 		}
-		texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, w, h );
+		texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, 240, 320 );
 		assert( !!texture && "Failed to create texture" );
 	}
 
-	SDL_Rect screen = { 0, 0, w, h };
 	uint16_t* dst = nullptr;
 	int pitch = 0;
-	SDL_LockTexture( texture, &screen, (void**)&dst, &pitch );
+	SDL_LockTexture( texture, NULL, (void**)&dst, &pitch );
 
-	for ( int i = 0; i < h; i++ ) {
-		memcpy( dst, pixels, w * 2 );
-		pixels += w;
+	for ( int y = 0; y < 320; y++ ) {
+		memcpy( dst, pixels, 480 );
+		pixels += 240;
 		dst += ( pitch / 2 );
 	}
 
@@ -67,6 +66,18 @@ void draw_draw( bool portrait, const uint16_t* pixels ) {
 	SDL_Vertex tr = { { w, 0 }, { 255, 255, 255, 255 }, { 1, 0 } };
 	SDL_Vertex bl = { { 0, h }, { 255, 255, 255, 255 }, { 0, 1 } };
 	SDL_Vertex br = { { w, h }, { 255, 255, 255, 255 }, { 1, 1 } };
+	if ( !portrait ) {
+		// rotation
+		// 0,0	1,0
+		// 0,1	1,1
+		//
+		// 1,0	1,1
+		// 0,0	0,1
+		tl = { { 0, 0 }, { 255, 255, 255, 255 }, { 1, 0 } };
+		tr = { { w, 0 }, { 255, 255, 255, 255 }, { 1, 1 } };
+		bl = { { 0, h }, { 255, 255, 255, 255 }, { 0, 0 } };
+		br = { { w, h }, { 255, 255, 255, 255 }, { 0, 1 } };
+	}
 
 	SDL_Vertex tris[] = { tl, tr, bl, bl, tr, br };
 
@@ -84,8 +95,9 @@ void draw_shut() {
 
 bool draw_done(void) {
 	SDL_Event e;
-	SDL_PollEvent( &e );
-	if ( e.type == SDL_QUIT )
-		return true;
+	while ( SDL_PollEvent( &e ) ) {
+		if ( e.type == SDL_QUIT )
+			return true;
+	}
 	return false;
 }

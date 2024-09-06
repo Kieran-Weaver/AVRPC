@@ -7,14 +7,18 @@
 #define RED 0xF800
 
 int main( void ) {
-	tft_init( true );
-	bool quit = false;
+	tft_init( false );
 	fb FB;
 
 	FB.init( 320, 240 );
 	int i = 0;
+	int s = 30;
 
-	while ( !quit ) {
+	tft_setScrollWindow( 30, 260, 30 );
+	tft_scroll( s );
+
+	while ( !draw_done() ) {
+
 		// Drawing code goes here
 		FB.fillScreen( WHITE );
 		FB.drawRect( 20, 20, 300, 220, BLACK );
@@ -22,12 +26,14 @@ int main( void ) {
 		i++;
 
 		FB.push();
+
+		if ( ( i % 16 ) == 0 ) {
+			s++;
+			tft_scroll( s );
+		}
 		// Drawing code end
 
 		tft_draw( false );
-
-		if ( draw_done() )
-			quit = true;
 
 	}
 

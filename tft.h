@@ -22,6 +22,30 @@ void tft_init( bool portrait );
 // Does NOT change depending on orientation
 void tft_setRect( int16_t x1, int16_t y1, int16_t x2, int16_t y2 );
 
+// Sets the fixed areas and scroll area
+//
+// |-------------------------|
+// |                         |} <- top fixed area (TFA)
+// |-------------------------|
+// |                         |}
+// |     scroll direction    |}
+// |           |             |} <- vertical scroll area (VSA)
+// |           v             |}
+// |                         |}
+// |-------------------------|
+// |                         |} <- bottom fixed area (BFA)
+// |-------------------------|
+//
+// only the scroll area scrolls.
+// TFA + VSA + BFA must be 320, so this only happens in the "Y" direction
+// if you want landscape, rotate your screen 90 degrees and look at the diagram again
+void tft_setScrollWindow( int16_t tfa, int16_t vsa, int16_t bfa );
+
+// Sets the line to display at the top of the VSA
+// absolute coordinates, not relative
+// must be within the VSA
+void tft_scroll( uint16_t scroll );
+
 // Single pixel
 void tft_push1( uint16_t pixel );
 // Multiple of the same pixel, len = number of pixels
@@ -41,7 +65,8 @@ void tft_push444( uint8_t* data, uint32_t len );
 // start of frame, end of previous frame
 // this "portrait" is completely independent of the other one
 // and corresponds to how the user rotates the display
-void tft_draw( bool portrait );
+// returns number of SPI bytes written
+uint32_t tft_draw( bool portrait );
 
 void tft_shut();
 #endif

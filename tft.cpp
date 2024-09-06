@@ -16,12 +16,20 @@ struct TFT {
 	int y1;
 	int x2;
 	int y2;
+// Scroll settings
+	int tfa;
+	int vsa;
+	int bfa;
+	int scroll;
+// Debug info
+	uint32_t spiBytes;
 };
 
 static TFT tft;
 
 void tft_init( bool portrait ) {
 	tft = {};
+	tft.vsa = 320;
 	tft.portrait = portrait;
 	memset( tft.pixels, 0, sizeof( tft.pixels ) );
 	draw_init();
@@ -44,9 +52,29 @@ void tft_setRect( int16_t x1, int16_t y1, int16_t x2, int16_t y2 ) {
 
 	tft.x = x1;
 	tft.y = y1;
+
+	tft.spiBytes += 2 * sizeof( tft.x ) + 2 * sizeof( tft.y );
 }
 
-void tft_push1( uint16_t pixel ) {
+void tft_setScrollWindow( int16_t tfa, int16_t vsa, int16_t bfa ) {
+	tft.tfa = tfa;
+	tft.vsa = vsa;
+	tft.bfa = bfa;
+
+	assert( ( tfa + vsa + bfa ) == 320 );
+
+	tft.spiBytes += 3 * sizeof( tfa );
+}
+
+void tft_scroll( uint16_t scroll ) {
+	tft.scroll = scroll;
+
+	assert( ( scroll >= tft.tfa ) && ( scroll <= ( tft.tfa + tft.vsa ) ) );
+
+	tft.spiBytes += sizeof( scroll );
+}
+
+void tft__push1( uint16_t pixel ) {
 	// Nothing has broken internally
 	assert( ( tft.x >= tft.x1 ) && ( tft.x <= tft.x2 ) );
 	assert( ( tft.y >= tft.y1 ) && ( tft.y <= tft.y2 ) );
@@ -66,6 +94,11 @@ void tft_push1( uint16_t pixel ) {
 			tft.y = tft.y1;
 		}
 	}
+}
+
+void tft_push1( uint16_t pixel ) {
+	tft__push1( pixel );
+	tft.spiBytes += 2;
 }
 
 void tft_pushRLE( uint16_t pixel, uint32_t len ) {
@@ -118,7 +151,7 @@ void tft_push444( uint8_t* data, uint32_t len ) {
 		pixel = pixel << 6;
 		pixel += ( bytes[ 1 ] & 0xf0 ) >> 4;
 		pixel = pixel << 1;
-		tft_push1( pixel );
+		tft__push1( pixel );
 
 		pixel += ( bytes[ 1 ] & 0x0f );
 		pixel = pixel << 5;
@@ -126,12 +159,34 @@ void tft_push444( uint8_t* data, uint32_t len ) {
 		pixel = pixel << 6;
 		pixel += ( bytes[ 2 ] & 0x0f );
 		pixel = pixel << 1;
-		tft_push1( pixel );
+		tft__push1( pixel );
+
+		tft.spiBytes += 3;
 	}
 }
 
-void tft_draw( bool portrait ) {
-	draw_draw( portrait, tft.pixels );
+uint32_t tft_draw( bool portrait ) {
+	uint32_t tmp = tft.spiBytes;
+
+	uint16_t * newpixels = new uint16_t[ 240 * 320 ];
+
+	memcpy( newpixels, tft.pixels, 480 * tft.tfa );
+
+	int iny = tft.scroll;
+	for ( int y = tft.tfa; y < ( tft.tfa + tft.vsa ); y++ ) {
+		memcpy( newpixels + ( y * 240 ), tft.pixels + ( iny * 240 ), 480 );
+		iny++;
+		if ( iny >= ( tft.tfa + tft.vsa ) ) iny = tft.tfa;
+	}
+
+	memcpy( newpixels + ( ( tft.tfa + tft.vsa ) * 240 ), tft.pixels + ( ( tft.tfa + tft.vsa ) * 240 ), tft.bfa * 480 );
+
+	draw_draw( portrait, newpixels );
+	tft.spiBytes = 0;
+
+	delete[] newpixels;
+
+	return tmp;
 }
 
 void tft_shut() {
