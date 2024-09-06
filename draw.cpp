@@ -40,6 +40,8 @@ void draw_draw( bool portrait, const uint16_t* pixels ) {
 	}
 
 	if ( ( w != lastw ) || ( h != lasth ) ) {
+		lastw = w;
+		lasth = h;
 		SDL_SetWindowSize( window, w * SCALE, h * SCALE );
 		SDL_RenderSetLogicalSize( renderer, w, h );
 		if ( texture != nullptr ) {
