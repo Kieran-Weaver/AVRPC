@@ -2,35 +2,101 @@
 #include "gfx.h"
 #include "draw.h"
 
-#define WHITE 0xFFFF
-#define BLACK 0
-#define RED 0xF800
+#define BLUE 0x001F
+
+struct vec2 {
+	int x;
+	int y;
+};
+
+struct vec3 {
+	int x;
+	int y;
+	int z;
+};
+
+struct vec3 vertices[8] = {
+ 	{ -75, -75, -75 },
+ 	{ 75, -75, -75 },
+ 	{ 75, -75, 75 },
+ 	{ -75, -75, 75 },
+ 	{ -75, 75, -75 },
+ 	{ 75, 75, -75 },
+ 	{ 75, 75, 75 },
+ 	{ -75, 75, 75 },
+ };
+
+vec2 project( vec3& camera, vec3& point, int window_dist ) {
+	int tmp = ( 100 * window_dist ) / ( point.z - camera.z );
+	return { ((point.x - camera.x) * tmp) / 100 + 160, ((point.y - camera.y) * tmp) / 100 + 120 };
+}
+
+void render_cube( fb& FB, int j, int k ) {
+	FB.fillScreen( 0xFFFF );
+	vec2 projected_vertices[8];
+	int window_dist = 400;
+	vec3 camera = { j, k, -500 };
+	
+	for ( int i = 0; i < 8; i++ ) {
+		projected_vertices[i] = project( camera, vertices[ i ], window_dist );
+	}
+
+	for ( int i = 0; i < 4; i++ ) {
+		FB.drawLine( projected_vertices[i].x, projected_vertices[i].y, projected_vertices[(i + 1) % 4].x, projected_vertices[(i + 1) % 4].y, BLUE);
+		FB.drawLine( projected_vertices[i + 4].x, projected_vertices[i + 4].y, projected_vertices[((i + 1) % 4) + 4].x, projected_vertices[((i + 1) % 4) + 4].y, BLUE);
+		FB.drawLine( projected_vertices[i].x, projected_vertices[i].y, projected_vertices[i + 4].x, projected_vertices[i + 4].y, BLUE);
+	}
+}
 
 int main( void ) {
-	tft_init( false );
+	tft_init( true );
 	fb FB;
 
-	FB.init( 320, 240 );
-	int i = 0;
-	int s = 30;
+	FB.init( 240, 320 );
 
-	tft_setScrollWindow( 30, 260, 30 );
-	tft_scroll( s );
+	int phase = 0;
+	int speed = 5;
+	int j = 0;
+	int k = 0;
 
 	while ( !draw_done() ) {
-
+		
 		// Drawing code goes here
-		FB.fillScreen( WHITE );
-		FB.drawRect( 20, 20, 300, 220, BLACK );
-		FB.fillRect( 40, 40, 280, 200, i );
-		i++;
+		switch ( phase ) {
+			case 0:
+				j += speed;
+				k = 0;
+				if ( j >= 200 ) phase = 1;
+				break;
+			case 1:
+				j = 200;
+				k -= speed;
+				if ( k <= -200 ) phase = 2;
+				break;
+			case 2:
+				k = -200;
+				j -= speed;
+				if ( j <= -200 ) phase = 3;
+				break;
+			case 3:
+				j = -200;
+				k += speed;
+				if ( k >= 0 ) phase = 4;
+				break;
+			case 4:
+				k = 0;
+				j += speed;
+				if ( j >= 0 ) {
+					phase = 0;
+					j = 0;
+				}
+				break;
+		}
+
+		render_cube( FB, j, k );
 
 		FB.push();
 
-		if ( ( i % 16 ) == 0 ) {
-			s++;
-			tft_scroll( s );
-		}
 		// Drawing code end
 
 		tft_draw( false );

@@ -2,6 +2,7 @@
 #include "tft.h"
 #include "draw.h"
 #include "string.h"
+#include <math.h>
 
 fb::~fb() {
 	if ( pixels ) {
@@ -29,7 +30,9 @@ bool fb::init( int16_t w, int16_t h ) {
 }
 
 void fb::writePixel( int16_t x, int16_t y, uint16_t color ) {
-	pixels[ y ][ x ] = color;
+	if ( ( x >= 0 ) && ( x < w ) && ( y >= 0 ) && ( y < h ) ) {
+		pixels[ y ][ x ] = color;
+	}
 }
 
 void fb::writeFastHLine( int16_t x1, int16_t y, int16_t x2, uint16_t color ) {
@@ -41,6 +44,27 @@ void fb::writeFastHLine( int16_t x1, int16_t y, int16_t x2, uint16_t color ) {
 void fb::writeFastVLine( int16_t x, int16_t y1, int16_t y2, uint16_t color ) {
 	for ( int y = y1; y < y2; y++ ) {
 		writePixel( x, y, color );
+	}
+}
+
+void fb::drawLine( int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color ) {
+	int dx = abs( x2 - x1 );
+	int sx = x1 < x2 ? 1 : -1;
+	int dy = -abs( y2 - y1 );
+	int sy = y1 < y2 ? 1 : -1;
+	int error = dx + dy;
+	while ( 1 ) {
+		writePixel( x1, y1, color );
+		if ( ( x1 == x2 ) && ( y1 == y2 ) ) break;
+		int e2 = 2 * error;
+		if ( e2 >= dy ) {
+			error += dy;
+			x1 += sx;
+		}
+		if ( e2 <= dx ) {
+			error += dx;
+			y1 += sy;
+		}
 	}
 }
 
