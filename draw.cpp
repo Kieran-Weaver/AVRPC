@@ -102,6 +102,7 @@ static HWND window;
 static volatile bool done = false;
 static uint32_t* px32 = nullptr;
 static volatile bool _port = false;
+static int lastw, lasth;
 
 static void win32_init( HDC hdc ) {
 	PIXELFORMATDESCRIPTOR pdf = {
@@ -170,7 +171,7 @@ void draw_init( void ) {
 	};
 	RegisterClass( &wndclass );
 	DWORD style = WS_OVERLAPPED | WS_VISIBLE;
-	window = CreateWindow( "gl", title, style, 0, 0, 960, 720, 0, 0, 0, 0 );
+	window = CreateWindow( "gl", title, style, 0, 0, 720, 960, 0, 0, 0, 0 );
 }
 
 uint32_t rgb565to888( uint16_t pixel ) {
@@ -183,6 +184,23 @@ uint32_t rgb565to888( uint16_t pixel ) {
 
 void draw_draw( bool portrait, const uint16_t* pixels ) {
 	if (!initialized) assert( false );
+
+	int w;
+	int h;
+
+	if ( portrait ) {
+		w = 240;
+		h = 320;
+	} else {
+		w = 320;
+		h = 240;
+	}
+
+	if ( ( w != lastw ) || ( h != lasth ) ) {
+		lastw = w;
+		lasth = h;
+		SetWindowPos( window, NULL, 0, 0, w * 3, h * 3, SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOZORDER );
+	}
 
 	for (int i = 0; i < (320*240); i++ ) {
 		px32[ i ] = rgb565to888( pixels[ i ] );
