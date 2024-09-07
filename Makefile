@@ -1,24 +1,29 @@
-TARGET  = sim
 CXX     = g++
 INC_FLAGS := $(shell sdl2-config --cflags)
 CPPFLAGS = $(INC_FLAGS) -MT $@ -MMD -MP -MF build/$*.d
 CXXFLAGS = -Wno-narrowing -O2 -std=c++17
-SRCS=$(shell find . -path "*.cpp")
-OBJS=$(patsubst %.cpp, ./build/%.o, $(SRCS))
-DEPS := $(OBJS:.o=.d)
 LDFLAGS := $(shell sdl2-config --libs)
 
+SRCS=$(shell find sim -path "*.cpp")
+OBJS=$(patsubst %.cpp, ./build/%.o, $(SRCS))
+DEPS := $(OBJS:.o=.d)
 
-all: $(TARGET)
+TARGET_C = $(wildcard *.cpp)
+TARGET_O = $(patsubst %.cpp, ./build/%.o, $(TARGET_C))
+TARGET_D = $(TARGET_O:.o=.d)
+TARGETS  = $(patsubst %.cpp, %, $(TARGET_C))
+
+all: $(TARGETS)
 
 clean:
-	rm -rf $(TARGET) build/
+	rm -rf $(TARGETS) build/
 
 ./build/%.o : ./%.cpp
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(OBJS) $(LDFLAGS) -o $(TARGET)
+$(TARGETS): $(OBJS) $(TARGET_O)
+	$(CXX) $(CXXFLAGS) $(OBJS) ./build/$@.o $(LDFLAGS) -o $@
 
 -include $(DEPS)
+-include $(TARGET_D)

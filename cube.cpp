@@ -1,6 +1,6 @@
-#include "tft.h"
-#include "gfx.h"
-#include "draw.h"
+#include "sim/tft.h"
+#include "sim/gfx.h"
+#include "sim/draw.h"
 
 #define BLUE 0x001F
 
