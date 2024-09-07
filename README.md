@@ -1,9 +1,9 @@
-# AVRPC
+# AVRPC V5
 
-The AVRPC is an atmega328p-based computer with the following specs:
+The AVRPC5 is an ESP32-based computer with the following specs:
 
-- Atmel atmega328p @ 16 MHz
-- 160x128 TFT with ILI9163 driver
+- ESP32 or ESP32-S3 microcontroller as the main CPU
+- 240x320 TFT with ST7789V driver
 - FAT32 Micro SD slot
 
-This is the 4th iteration of the AVRPC project, which used to use a 320x240 TFT.
+This is the 5th iteration of the AVRPC project. The "avrpc4" branch contains the last revision.
