@@ -13,6 +13,7 @@ static SDL_Renderer* renderer;
 static SDL_Texture* texture;
 static int lastw;
 static int lasth;
+static touch touched;
 
 void draw_init( void ) {
 	assert( SDL_Init( SDL_INIT_VIDEO ) >= 0 && "SDL_Init failed" );
@@ -96,8 +97,27 @@ void draw_shut() {
 bool draw_done(void) {
 	SDL_Event e;
 	while ( SDL_PollEvent( &e ) ) {
-		if ( e.type == SDL_QUIT )
+		switch ( e.type ) {
+		case SDL_QUIT:
 			return true;
+			break;
+		case SDL_MOUSEBUTTONDOWN:
+			touched.touched = true;
+			touched.x = e.button.x;
+			touched.y = e.button.y;
+			break;
+		case SDL_MOUSEMOTION:
+			touched.x = e.motion.x;
+			touched.y = e.motion.y;
+			break;
+		case SDL_MOUSEBUTTONUP:
+			touched = {};
+			break;
+		}
 	}
 	return false;
+}
+
+touch draw_touch( void ) {
+	return touched;
 }
