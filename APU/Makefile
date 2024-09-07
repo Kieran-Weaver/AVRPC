@@ -1,6 +1,6 @@
 TARGET  = apu
 MCU     = attiny85
-F_CPU   = 20000000
+F_CPU   = 16000000
 PRG     = usbtiny
 AVRDUDE = avrdude -c $(PRG) -p $(MCU)
 OBJCOPY = avr-objcopy
@@ -11,10 +11,10 @@ CXX     = avr-g++
 INC_FLAGS := -I .
 CPPFLAGS = $(INC_FLAGS) -MT $@ -MMD -MP -MF build/$*.d
 AVR_FLAGS = 
-CFLAGS   = -Wall -Os -mmcu=$(MCU) -DF_CPU=$(F_CPU) $(AVR_FLAGS) $(INC_FLAGS) -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -mrelax -flto -DBOOT_ADDR=$(BOOT_ADDR)
-CXXFLAGS = -Wall -Os -mmcu=$(MCU) -DF_CPU=$(F_CPU) $(AVR_FLAGS) -std=c++17   -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -mrelax -flto -DBOOT_ADDR=$(BOOT_ADDR)
+CFLAGS   = -Wall -Os -mmcu=$(MCU) -DF_CPU=$(F_CPU) $(AVR_FLAGS) $(INC_FLAGS) -fpack-struct -fshort-enums -mrelax
+CXXFLAGS = -Wall -Os -mmcu=$(MCU) -DF_CPU=$(F_CPU) $(AVR_FLAGS) -std=c++17 -fpack-struct -fshort-enums -mrelax
 
-SRCS=$(shell find pff -path "*.cpp") $(shell find . -path "*.S")
+SRCS=$(shell find . -path "*.cpp") $(shell find . -path "*.S")
 OBJS=$(patsubst %.S, ./build/%.o, $(patsubst %.cpp, ./build/%.o, $(SRCS)))
 DEPS := $(OBJS:.o=.d)
 
@@ -24,7 +24,7 @@ test:
 	$(AVRDUDE) -v
 
 flash: $(TARGET).hex
-	$(AVRDUDE) -U flash:w:$(TARGET).hex:i
+	sudo $(AVRDUDE) -U flash:w:$(TARGET).hex:i
 
 clean:
 	rm -rf *.hex *.elf build/
